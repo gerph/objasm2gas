@@ -5,3 +5,4 @@ test.*
 dockcross-linux-armv7
 testdata/gas/
 !testdata/test.pl
+artifacts/

@@ -410,7 +410,9 @@ if (!defined $testtool ||
     print "    -test <re>       Regular expression to match for test name\n";
     print "    -show-command    Show command executed\n";
     print "    -show-output     Show output on failure\n";
+    print "    -show-diffs      Show output as diffs failure\n";
     print "    -save-output <dir>   Save all output to a directory\n";
+    print "    -junitxml <file> Write JUnit XML to a file\n";
     print "    -debug <type>    Enable debug types as comma-separated list\n";
     exit($help ? 0 : 1);
 }
