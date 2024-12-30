@@ -25,7 +25,14 @@
 #
 
 Group: Data file
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 
 Test: Example data for AArch64
-Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 Args: data/aarch64_helloworld
+
+
+Group: Definitions
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+
+Test: Mappings for values
+Args: definitions/mappings
