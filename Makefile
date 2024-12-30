@@ -10,5 +10,5 @@ ${CROSS}:
 	chmod +x ${CROSS}
 
 
-tests:
+tests: ${CROSS} testdata/test.pl
 	AS="${AS}" perl testdata/test.pl -script tests.txt -show-command -show-output "../test-conversion.sh" testdata

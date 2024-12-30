@@ -4,3 +4,4 @@ test.*
 # Test things
 dockcross-linux-armv7
 testdata/gas/
+!testdata/test.pl

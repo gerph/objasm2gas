@@ -212,6 +212,13 @@ if (@output_files == 0) {
 my %in_out_files;
 @in_out_files{@input_files} = @output_files;
 
+
+# Variable definitions
+my $mapping_base        = 0;
+my $mapping_register    = undef;
+my %mapping             = ();
+my %constant            = ();
+
 # file processing
 foreach (keys %in_out_files) {
     # global vars for diagnosis
@@ -470,6 +477,30 @@ sub single_line_conv {
             ": Converting '$sign${base}_$lit' to hexadecimal literal '${sign}0x$cvt'");
 
         $line =~ s/$sign${base}_$lit/${sign}0x$cvt/;
+    }
+
+    # ------ Conversion: mappings ------
+    if ($line =~ m/^(\s*)\^(\s*)(.*?)(\s*\/\/.*)?$/) {
+        my ($spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
+        $mapping_base = $value;  # FIXME: Need to evaluate
+        $mapping_register = undef;
+        $line = '';
+    }
+    elsif ($line =~ m/^(\w+)(\s*)\#(\s*)(.*?)(\s*\/\/.*)?$/) {
+        my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
+        # FIXME: Value should be evaluated?
+        $mapping{$symbol} = $mapping_base;
+        $line = ".set $symbol, $mapping_base$comment\n";
+        $mapping_base += $value;
+    }
+
+
+    # ------ Conversion: constants ------
+    if ($line =~ m/^(\w+)(\s*)\*(\s*)(.*?)(\s*\/\/.*)?$/) {
+        my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
+        # FIXME: Value should be evaluated?
+        $constant{$symbol} = $value;
+        $line = ".set $symbol, $value$comment\n";
     }
 
     # ------ Conversion: conditional directives ------
