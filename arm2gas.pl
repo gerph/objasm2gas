@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+##
+# Convert ObjAsm-like syntax to somethng that can be assembled by GNU assembler.
+# Based on https://github.com/yxnan/arm2gas
+# Releasd under GPL-3 license.
 
 use strict;
 use warnings;
@@ -6,15 +10,16 @@ use feature ":5.14";
 no warnings qw(experimental);
 use Getopt::Long;
 
+my $toolname = 'objasm2gas';
 my $ver = '1.0';
 my $helpmsg = <<"USAGE";
-arm2gas(v$ver) - Convert legacy ARM assembly syntax (used by armasm) to GNU syntax (GAS)
+$toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
-Usage: arm2gas.pl [options] file1 [file2...]
+Usage: $toolname [<options>] <file1> [<file2>...]
 Options:
     -c, --compatible            Keeps compatibility with armclang assembler
     -h, --help                  Show this help text
-    -i, --verbose               Show a message on every non-trivial convertions
+    -i, --verbose               Show a message on every non-trivial conversion
     -n, --no-comment            Discard all the comments in output
     -o, --output=<file>         Specify the output filename
     -r, --return-code           Print return code definitions
@@ -25,16 +30,17 @@ Options:
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
-    in GNU format, arm2gas will try best to convert and generate warning information
+    in GNU format, the tool will try best to convert and generate warning information
     on the specific line. Therefore, a 'warning' does NOT necessarily mean no issue,
     please check the conversion result to ensure it works as expected.
 
-    Note that arm2gas will assume that the input file is in the correct syntax,
-    otherwise, the conversion result is UNEXPECTED
+    Note that the tool will assume that the input file is in the correct syntax,
+    otherwise, the conversion result is UNEXPECTED.
 
 Issues and Bugs:
-    https://github.com/typowritter/arm2gas
-    mailto:yxnan\@pm.me
+    https://github.com/gerph/arm2gas
+    mailto:gerph\@gerph.org
+    (original version: https://github.com/yxnan/arm2gas)
 USAGE
 
 #--------------------------------
@@ -45,7 +51,7 @@ my $ERR_IO          = 2;
 my $ERR_UNSUPPORT   = 3;
 
 my $rvalmsg = <<"RETVAL";
-armgas may return one of several error code if it encounters problems.
+$toolname may return one of several error code if it encounters problems.
 
     0       No problems occurred.
     1       Invalid or conflict command-line args.
@@ -253,12 +259,12 @@ sub single_line_conv {
 
     # ------ Conversion: comments ------
     # if has comments
-    if ($line =~ m/;/) {
+    if ($line =~ m/(^|\s);/) {
         if ($opt_nocomment) {
-            $line =~ s/;.*$//;
+            $line =~ s/(^|\s);.*$//;
         }
         else {
-            $line =~ s/;/\/\//;
+            $line =~ s/(^|\s);/ \/\//;
         }
 
     }
@@ -338,32 +344,97 @@ sub single_line_conv {
     }
 
     # ------ Conversion: sections ------
-    if ($line =~ m/^\s*AREA\s+\|*([.\w]+)\|*([^\/]*?)(\s*\/\/.*)?$/i) {
-        msg_warn(0, "$in_file:$line_n1 -> $out_file:$line_n2".
-            ": Not all AREA attributes are supported".
-            ", need a manual check");
+    if ($line =~ m/^\s*AREA\s+\|*([.\w\$]+)\|*([^\/]*?)(\s*\/\/.*)?$/i) {
 
         my $sec_name = $1;
         my @options  = split /,/, $2;
 
         my $flags = "a";
         my $args  = "";
-        foreach (@options) {
-            $flags .= "x"   if (m/CODE/i);
-            $flags .= "w"   if (m/READWRITE/i);
-            $flags =~ s/a// if (m/NOALLOC/i);
-            $flags .= "M"   if (m/MERGE/i);
-            $flags .= "G"   if (m/GROUP/i);
-
-            $args .= ", \@progbits" if (m/DATA/i);
+        my @warnings = ();
+        my $align = undef;
+        my $marked_readonly = 0;
+        for (@options) {
+            s/^ *//;
+            s/ *$//;
+            $args .= ", \@progbits" if (s/DATA//i);
             $args .= ", $1" if (m/MERGE\s*=\s*(\d+)/i);
             $args .= ", $1" if (m/GROUP\s*=\s*\|*(\w+)\|*/i);
+
+            $flags .= "x"   if (s/CODE//i);
+            $flags .= "w"   if (s/READWRITE//i);
+            $flags =~ s/a// if (s/NOALLOC//i);
+            $flags .= "M"   if (s/MERGE\s*=\s*(\d+)//i);
+            $flags .= "G"   if (s/GROUP\s*=\s*\|*(\w+)\|*//i);
+
+            if (s/ALIGN\s*=\s*(\d+)//i)
+            {
+                $align = $1;
+            }
+
+            # Sections are readonly by default in ELF
+            $marked_readonly = 1 if (s/READONLY//i);
+
+            if ($_ ne "")
+            {
+                push @warnings, $_;
+            }
         }
+        if (!$marked_readonly && $args =~ /\@progbits/ && $flags !~ /w/)
+        {
+            # It's data, and they didn't mark as readonly, and didn't say READWRITE
+            # So it must be readwrite (ObjAsm defaults to read-write if you don't say)
+            $flags .= 'w';
+        }
+        if (scalar(@warnings) > 0)
+        {
+            # Only generate a warning when there was something we didn't understand
+            msg_warn(0, "$in_file:$line_n1 -> $out_file:$line_n2".
+                ": Not all AREA attributes are supported".
+                ", (ignored: " . join(', ', @warnings) . ")");
+        }
+
+        # Fix up the section name
+        if ($sec_name =~ /^\./)
+        {
+            # The section starts with a '.' so we assume it is literal and use as is.
+        }
+        else
+        {
+            # The section name does not start with a '.' so probably this is a raw
+            # ObjAsm file with the RISC OS style C$$code or similar. Let's map it
+            # to something sane.
+            $sec_name =~ s/\$\$?(code|data)//i;
+            $sec_name =~ s/\$/_/;
+            my $sec = '.text';
+            if ($args =~ /\@progbits/)
+            {
+                if ($flags =~ /w/)
+                {
+                    $sec = '.data';
+                }
+                else
+                {
+                    $sec = '.rodata';
+                }
+            }
+
+            if ($sec_name eq 'C')
+            {
+                # C code, so just put it in a .text / .rodata / .data area
+                $sec_name = '.text';
+            }
+            else
+            {
+                $sec_name = ".text.$sec_name";
+            }
+        }
+
 
         $line =~ s/^(\s*)AREA[^\/]+[^\/\s]/$1.section $sec_name, "$flags"$args/i;
 
         my $indent = $1;
-        if (m/ALIGN\s*=\s*(\d+)/i ~~ @options) {
+        if (defined($align)) {
             $line .= "$indent.balign " . (2**$1) . "\n";
             $result{inc}++;
         }
@@ -382,11 +453,11 @@ sub single_line_conv {
         $line .= $indent . "$op $reg, $reg, $imp_shift\n";
         $result{inc}++;
     }
-    elsif ($line =~ m/(-?)&([\dA-F]+)/) {
+    elsif ($line =~ m/(-?)&([\dA-F]+)/i) {
         my $sign    = $1;
         my $hex_lit = $2;
         msg_info("$in_file:$line_n1 -> $out_file:$line_n2".
-            ": Converting hexidecimal '&$hex_lit' to '0x$hex_lit'");
+            ": Converting hexadecimal '&$hex_lit' to '0x$hex_lit'");
         $line =~ s/${sign}&$hex_lit/${sign}0x$hex_lit/;
     }
     elsif ($line =~ m/(-?)([2|8])_(\d+)/) {
@@ -396,7 +467,7 @@ sub single_line_conv {
         my $cvt  = dec2hex (($base eq "2") ?
             oct("0b".$lit): oct($lit));
         msg_info("$in_file:$line_n1 -> $out_file:$line_n2".
-            ": Converting '$sign${base}_$lit' to hexidecimal literal '${sign}0x$cvt'");
+            ": Converting '$sign${base}_$lit' to hexadecimal literal '${sign}0x$cvt'");
 
         $line =~ s/$sign${base}_$lit/${sign}0x$cvt/;
     }
@@ -426,6 +497,85 @@ sub single_line_conv {
     if ($line =~ m/(INFO\s+\d+\s*,)\s*".*"/i) {
         my $prefix = $1;
         $line =~ s/$prefix/.warning /i;
+    }
+    # Byte/String constants
+    if ($line =~ m/^(\s+)=\s+(.*)/i) {
+        my $prefix = $1;
+        my $const = $2;
+        # The constants can be things like:
+        # = "hello"
+        # = "hello", "there"
+        # = 1, 2, 3
+        # = "hello", 32, "there"
+        # = "hello", 0
+        # We will decode this as a sequence of regex matched strings
+        my @lines = ();
+        $const =~ s/\s+$//;
+        my @num_accumulator = ();
+        while ($const ne '')
+        {
+            $const =~ s/^\s//;
+            if ($const eq '')
+            {
+                # We're done.
+                break;
+            }
+            elsif ($const =~ /^\/\//)
+            {
+                # We've found a comment, so just append this as a bare line
+                if (@num_accumulator)
+                {   # Flush the number accumulator
+                    push @lines, ".byte " . join ", ", @num_accumulator;
+                    @num_accumulator = ();
+                }
+                push @lines, $const;
+                break;
+            }
+            elsif ($const =~ s/^("[^"]*"),\s*0(?=\s|$)//)
+            {
+                # This is a zero-terminated string, so dump it out raw.
+                if (@num_accumulator)
+                {   # Flush the number accumulator
+                    push @lines, ".byte " . join ", ", @num_accumulator;
+                    @num_accumulator = ();
+                }
+                push @lines, ".asciz $1";
+            }
+            elsif ($const =~ s/^("[^"]*")//)
+            {
+                # This is a string, so dump it out
+                if (@num_accumulator)
+                {   # Flush the number accumulator
+                    push @lines, ".byte " . join ", ", @num_accumulator;
+                    @num_accumulator = ();
+                }
+                push @lines, ".ascii $1";
+            }
+            elsif ($const =~ s/^((?:0x|&)[0-9a-f]+|[0-9]+)//i)
+            {
+                # This is a number, so we want to accumulate it.
+                my $value = $1;
+                $value =~ s/&/0x/;
+                push @num_accumulator, $value;
+            }
+            else
+            {
+                msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+                    ": Literal byte sequence cannot interpret '$const'".
+                    ", need a manual check");
+                break;
+            }
+            # Trim any commas between parameters
+            $const =~ s/^(,\s*)+//;
+        }
+
+        if (@num_accumulator)
+        {   # Flush the number accumulator
+            push @lines, ".byte " . join ", ", @num_accumulator;
+            @num_accumulator = ();
+        }
+
+        $line = join "", map { "$prefix$_\n" } @lines;
     }
 
     $line =~ s/\b$_\b/$misc_op{$_}/ foreach (keys %misc_op);

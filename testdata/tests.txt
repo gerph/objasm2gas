@@ -1,0 +1,31 @@
+##
+# Test script for ObjAsm-to-GAS converter
+#
+# Comments prefixed by '#'.
+#
+# Format:
+#
+# Group: <name>
+# Command: <command>
+# File: <source filename>
+# Expect: <expectation filename>
+# Replace: <replacements filename>
+# Creates: <output file>
+# Length: <length of the created file>
+# RC: <return code expected>
+#
+# Test: <name>
+# <sequence of Command, File, Expect, etc>
+#
+# <command> may contain:
+#    $TOOL      - Name of the tool (native format)
+#    $FILE      - Filename as supplied
+#    $OFILE     - Object filename (in format supplied)
+#    $SFILE     - Source assembler filename (in format supplied)
+#
+
+Group: Data file
+
+Test: Example data for AArch64
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Args: data/aarch64_helloworld
