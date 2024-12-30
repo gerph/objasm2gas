@@ -142,6 +142,17 @@ our %init_val = (
     "S" => '""'         # string
 );
 
+# Names of all the general purpose registers we can use
+our @regnames = (
+    (map { "r$_" } (0..15)),
+    'sp',
+    'lr',
+    'pc'
+);
+
+# Regular expression to match any of the registers
+our $regnames_re = "(?:" . (join "|", sort { length($a) <=> length($b) } @regnames) . ")";
+
 #--------------------------------
 # function definitions
 #--------------------------------
@@ -482,16 +493,47 @@ sub single_line_conv {
     # ------ Conversion: mappings ------
     if ($line =~ m/^(\s*)\^(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
+        if ($value =~ m/^(.*), ($regnames_re)/)
+        {
+            $value = $1;
+            $mapping_register = $2;
+        }
+        else
+        {
+            $mapping_register = undef;
+        }
         $mapping_base = $value;  # FIXME: Need to evaluate
-        $mapping_register = undef;
         $line = '';
     }
     elsif ($line =~ m/^(\w+)(\s*)\#(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
+        if (!defined $mapping_base)
+        {
+            exit_error("$in_file:$line_n1 -> $out_file:$line_n2".
+                ": Attempt to define field mapping for '$symbol' without setting up base ('^' not used)");
+        }
+        $comment //= '';
         # FIXME: Value should be evaluated?
-        $mapping{$symbol} = $mapping_base;
+        $mapping{$symbol} = [$mapping_base, $mapping_register];
         $line = ".set $symbol, $mapping_base$comment\n";
         $mapping_base += $value;
+    }
+
+    # ------ Conversion: references to field mappings ------
+    if ($line =~ m/(\s)(LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/)
+    {
+        my ($space1, $instbase, $extra, $space2, $reg1, $comma, $symbol) = ($1, $2, $3, $4, $5, $6, $7);
+        if (defined $mapping{$symbol})
+        {
+            my ($value, $reg) = @{ $mapping{$symbol} };
+            if (!defined $reg)
+            {
+                exit_error("$in_file:$line_n1 -> $out_file:$line_n2".
+                    ": Attempt to use field mapping for '$symbol' without a register base in definition");
+            }
+            my $replacement = "[$reg, #$value]";
+            $line =~ s/(\s)(LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/$space1$instbase$extra$space2$reg1$comma$replacement/;
+        }
     }
 
 
@@ -607,6 +649,15 @@ sub single_line_conv {
         }
 
         $line = join "", map { "$prefix$_\n" } @lines;
+    }
+
+    # ------ Conversion: labels on instructions ------
+    if ($line =~ m/^([a-zA-Z_]+)(\s+)([A-Z])/) {
+        my $label = $1;
+        my $spaces = $2;
+        my $inst1 = $3;
+        my $prefix = (' ' x length($label)) . $spaces;
+        $line =~ s/$label$spaces$inst1/$label:\n$prefix$inst1/;
     }
 
     $line =~ s/\b$_\b/$misc_op{$_}/ foreach (keys %misc_op);

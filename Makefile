@@ -23,4 +23,4 @@ tests: ${CROSS} testdata/test.pl dirs
 	AS="${AS}" perl testdata/test.pl -junitxml artifacts/junit.xml -script tests.txt -show-command -show-output "../test-conversion.sh" testdata
 
 dirs:
-	mkdir artifacts
+	mkdir -p artifacts

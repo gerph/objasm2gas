@@ -39,3 +39,6 @@ Args: definitions/constants
 
 Test: Mappings for values
 Args: definitions/mappings
+
+Test: Mappings with regbase for values
+Args: definitions/mappings_withreg
