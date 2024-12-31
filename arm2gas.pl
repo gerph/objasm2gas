@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use feature ":5.14";
 no warnings qw(experimental);
+no warnings qw(portable);
 use Getopt::Long;
 
 my $toolname = 'objasm2gas';
@@ -49,6 +50,7 @@ USAGE
 my $ERR_ARGV        = 1;
 my $ERR_IO          = 2;
 my $ERR_UNSUPPORT   = 3;
+my $ERR_SYNTAX      = 4;
 
 my $rvalmsg = <<"RETVAL";
 $toolname may return one of several error code if it encounters problems.
@@ -57,6 +59,7 @@ $toolname may return one of several error code if it encounters problems.
     1       Invalid or conflict command-line args.
     2       File I/O error.
     3       Unsupported conversion.
+    4       Syntax or processing error.
     255     Generic error code.
 
 RETVAL
@@ -237,13 +240,25 @@ foreach (keys %in_out_files) {
     our $out_file = $in_out_files{$_};
     our $line_n1  = 1;
     our $line_n2  = 1;
+    our $context;
 
     open(my $f_in, "<", $_)
         or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
-    open(my $f_out, ">", $out_file)
-        or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+    my $f_out;
+    if ($out_file eq '-')
+    {
+        # Write to the stdout stream
+        open($f_out, ">&", STDOUT)
+            or exit_error($ERR_IO, "$0:".__LINE__.": <STDOUT>: $!");
+    }
+    else
+    {
+        open($f_out, ">", $out_file)
+            or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+    }
 
     while (my $line = <$f_in>) {
+        $context = "$in_file:$line_n1 -> $out_file:$line_n2";
         single_line_conv($line);
         print $f_out $result{res};
         $line_n1++;
@@ -260,6 +275,7 @@ sub single_line_conv {
     our $out_file;
     our $line_n1;
     our $line_n2;
+    our $context;
     my $line = shift;
     $result{inc} = 1;
 
@@ -271,18 +287,18 @@ sub single_line_conv {
 
     # warn if detect a string
     if ($line =~ m/"+/) {
-        msg_warn(0, "$in_file:$line_n1 -> $out_file:$line_n2".
+        msg_warn(0, "$context".
             ": Conversion containing strings needs a manual check");
     }
 
     # ------ Conversion: comments ------
     # if has comments
-    if ($line =~ m/(^|\s);/) {
+    if ($line =~ m/(^|\s+);/) {
         if ($opt_nocomment) {
-            $line =~ s/(^|\s);.*$//;
+            $line =~ s/(^|\s+);.*$//;
         }
         else {
-            $line =~ s/(^|\s);/ \/\//;
+            $line =~ s/(^|\s+);/$1\/\//;
         }
 
     }
@@ -305,7 +321,7 @@ sub single_line_conv {
         when (m/^((\d+)[a-zA-Z_]\w+)\s*(\/\/.*)?$/) {
             my $full_label = $1;
             my $num_label  = $2;
-            msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+            msg_warn(1, "$context".
                 ": Numeric local label with scope '$1' is not supported in GAS".
                 ", converting to '$2'");
             $line =~ s/$full_label/$num_label:/;
@@ -313,7 +329,7 @@ sub single_line_conv {
         # delete ROUT directive
         when (m/^(\w+\s*ROUT\b)/i) {
             my $rout = $1;
-            msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+            msg_warn(1, "$context".
                 ": Scope of numeric local label is not supported in GAS".
                 ", removing ROUT directives");
             $line =~ s/$rout//;
@@ -326,11 +342,11 @@ sub single_line_conv {
             my $num_label    = $4;
             my $scope        = $5;
             ($search_level eq "")
-                or msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+                or msg_warn(1, "$context".
                 ": Can't specify label's search level '$search_level' in GAS".
                 ", dropping");
             ($scope eq "")
-                or msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+                or msg_warn(1, "$context".
                 ": Can't specify label's scope '$scope' in GAS".
                 ", dropping");
             $line =~ s/$label/$num_label$direction/;
@@ -407,7 +423,7 @@ sub single_line_conv {
         if (scalar(@warnings) > 0)
         {
             # Only generate a warning when there was something we didn't understand
-            msg_warn(0, "$in_file:$line_n1 -> $out_file:$line_n2".
+            msg_warn(0, "$context".
                 ": Not all AREA attributes are supported".
                 ", (ignored: " . join(', ', @warnings) . ")");
         }
@@ -464,31 +480,16 @@ sub single_line_conv {
         my $reg       = $2;
         my $op        = $3;
         my $imp_shift = $4;
-        msg_warn(0, "$in_file:$line_n1 -> $out_file:$line_n2".
+        msg_warn(0, "$context".
             ": Implicit shift is not supported in GAS".
             ", converting to explicit shift");
         $line =~ s/,\s*$op\s*$imp_shift//i;
         $line .= $indent . "$op $reg, $reg, $imp_shift\n";
         $result{inc}++;
     }
-    elsif ($line =~ m/(-?)&([\dA-F]+)/i) {
-        my $sign    = $1;
-        my $hex_lit = $2;
-        msg_info("$in_file:$line_n1 -> $out_file:$line_n2".
-            ": Converting hexadecimal '&$hex_lit' to '0x$hex_lit'");
-        $line =~ s/${sign}&$hex_lit/${sign}0x$hex_lit/;
-    }
-    elsif ($line =~ m/(-?)([2|8])_(\d+)/) {
-        my $sign = $1;
-        my $base = $2;
-        my $lit  = $3;
-        my $cvt  = dec2hex (($base eq "2") ?
-            oct("0b".$lit): oct($lit));
-        msg_info("$in_file:$line_n1 -> $out_file:$line_n2".
-            ": Converting '$sign${base}_$lit' to hexadecimal literal '${sign}0x$cvt'");
 
-        $line =~ s/$sign${base}_$lit/${sign}0x$cvt/;
-    }
+    # Expand numeric literals
+    $line = expand_literals($line, "$context");
 
     # ------ Conversion: mappings ------
     if ($line =~ m/^(\s*)\^(\s*)(.*?)(\s*\/\/.*)?$/) {
@@ -502,25 +503,24 @@ sub single_line_conv {
         {
             $mapping_register = undef;
         }
-        $mapping_base = $value;  # FIXME: Need to evaluate
+        $mapping_base = evaluate($value);
         $line = '';
     }
     elsif ($line =~ m/^(\w+)(\s*)\#(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
         if (!defined $mapping_base)
         {
-            exit_error("$in_file:$line_n1 -> $out_file:$line_n2".
+            exit_error($ERR_SYNTAX, "$context".
                 ": Attempt to define field mapping for '$symbol' without setting up base ('^' not used)");
         }
         $comment //= '';
-        # FIXME: Value should be evaluated?
         $mapping{$symbol} = [$mapping_base, $mapping_register];
-        $line = ".set $symbol, $mapping_base$comment\n";
-        $mapping_base += $value;
+        $line = ".set $symbol, " . gas_number($mapping_base) . "$comment\n";
+        $mapping_base += evaluate($value);
     }
 
     # ------ Conversion: references to field mappings ------
-    if ($line =~ m/(\s)(LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/)
+    if ($line =~ m/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/)
     {
         my ($space1, $instbase, $extra, $space2, $reg1, $comma, $symbol) = ($1, $2, $3, $4, $5, $6, $7);
         if (defined $mapping{$symbol})
@@ -528,11 +528,20 @@ sub single_line_conv {
             my ($value, $reg) = @{ $mapping{$symbol} };
             if (!defined $reg)
             {
-                exit_error("$in_file:$line_n1 -> $out_file:$line_n2".
+                exit_error($ERR_SYNTAX, "$context".
                     ": Attempt to use field mapping for '$symbol' without a register base in definition");
             }
-            my $replacement = "[$reg, #$value]";
-            $line =~ s/(\s)(LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/$space1$instbase$extra$space2$reg1$comma$replacement/;
+            my $replacement;
+            if ($instbase eq 'ADR')
+            {
+                $replacement = "$reg, #$value";
+                $instbase = 'ADD';
+            }
+            else
+            {
+                $replacement = "[$reg, #$value]";
+            }
+            $line =~ s/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/$space1$instbase$extra$space2$reg1$comma$replacement/;
         }
     }
 
@@ -540,9 +549,9 @@ sub single_line_conv {
     # ------ Conversion: constants ------
     if ($line =~ m/^(\w+)(\s*)\*(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
-        # FIXME: Value should be evaluated?
-        $constant{$symbol} = $value;
-        $line = ".set $symbol, $value$comment\n";
+        $constant{$symbol} = evaluate($value);
+        $comment //= '';
+        $line = ".set $symbol, " . gas_number($value) . "$comment\n";
     }
 
     # ------ Conversion: conditional directives ------
@@ -554,7 +563,7 @@ sub single_line_conv {
     # ------ Conversion: operators ------
     $line =~ s/$_/$operators{$_}/i foreach (keys %operators);
     if ($line =~ m/(:[A-Z]+:)/i) {
-        msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+        msg_warn(1, "$context".
             ": Unsupported operator $1".
             ", need a manual check");
     }
@@ -591,7 +600,7 @@ sub single_line_conv {
             if ($const eq '')
             {
                 # We're done.
-                break;
+                last;
             }
             elsif ($const =~ /^\/\//)
             {
@@ -602,7 +611,7 @@ sub single_line_conv {
                     @num_accumulator = ();
                 }
                 push @lines, $const;
-                break;
+                last;
             }
             elsif ($const =~ s/^("[^"]*"),\s*0(?=\s|$)//)
             {
@@ -633,10 +642,10 @@ sub single_line_conv {
             }
             else
             {
-                msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+                msg_warn(1, "$context".
                     ": Literal byte sequence cannot interpret '$const'".
                     ", need a manual check");
-                break;
+                last;
             }
             # Trim any commas between parameters
             $const =~ s/^(,\s*)+//;
@@ -666,7 +675,7 @@ sub single_line_conv {
     if ($line =~ m/LCL([A|L|S])\s+(\w+)/i) {
         my $var_type = $1;
         my $var_name = $2;
-        msg_warn(1, "$in_file:$line_n1 -> $out_file:$line_n2".
+        msg_warn(1, "$context".
             ": Local variable '$var_name' is not supported".
             ", using static declaration");
         $line =~ s/LCL$var_type/.set/i;
@@ -717,4 +726,110 @@ sub dec2hex {
         }
     }
     return $hexnum;
+}
+
+
+##
+# Expand the literals into values that can be evaluated in GNU AS (or in Perl)
+#
+# @param[in] $line:     The line to process.
+#
+# @return Line with literals replaced so that they can be processed by GNU AS.
+sub expand_literals
+{
+    my ($line) = @_;
+    our $context;
+    while (1)
+    {
+        if ($line =~ m/(-?)&([\dA-F]+)/i) {
+            my $sign    = $1;
+            my $hex_lit = $2;
+            msg_info($context.
+                ": Converting hexadecimal '&$hex_lit' to '0x$hex_lit'");
+            $line =~ s/${sign}&$hex_lit/${sign}0x$hex_lit/;
+        }
+        elsif ($line =~ m/(-?)([2|8])_(\d+)/) {
+            my $sign = $1;
+            my $base = $2;
+            my $lit  = $3;
+            my $cvt  = dec2hex (($base eq "2") ?
+                oct("0b".$lit): oct($lit));
+            msg_info($context.
+                ": Converting '$sign${base}_$lit' to hexadecimal literal '${sign}0x$cvt'");
+
+            $line =~ s/$sign${base}_$lit/${sign}0x$cvt/;
+        }
+        else
+        {
+            last;
+        }
+    }
+    return $line;
+}
+
+
+##
+# Evaluate an expression, if we can.
+#
+# @param[in] $expr:     Expression to evaluate
+#
+# @return:  value as a number if possible.
+sub evaluate
+{
+    my ($expr) = @_;
+    my $orig = $expr;
+    our $context;
+
+    $expr = expand_literals($expr);
+
+    $expr =~ s/$_/$operators{$_}/i foreach (keys %operators);
+    $expr =~ s/$_/$mapping{$_}->[0]/i foreach (keys %mapping);
+    $expr =~ s/$_/$constant{$_}/i foreach (keys %constant);
+
+    my $value = eval $expr;
+    if ($@)
+    {
+        # Something went wrong in the evaluation; let's just fault this.
+        exit_error($ERR_SYNTAX, "$context".
+            ": Evaluation of variables in '$orig' produced '$expr' which failed: $@");
+    }
+
+    return $value;
+}
+
+
+##
+# Convert a numeric value to a GAS value
+#
+# @param[in] $expr:     Value to present
+#
+# @return:  The string that can be used in GNU AS for the value, but is humanly readable.
+sub gas_number
+{
+    my ($expr) = @_;
+    my $value = evaluate($expr);
+    my $sign = '';
+
+    $sign = '-' if ($value < 0);
+    if ($value >= 0 && $value < 1024)
+    {
+        return "$sign$value";
+    }
+    if ($value < 0x10000)
+    {
+        return sprintf("${sign}0x%04x", $value);
+    }
+    if ($value < 0x1000000)
+    {
+        return sprintf("${sign}0x%06x", $value);
+    }
+    if ($value < 0x100000000)
+    {
+        return sprintf("${sign}0x%08x", $value);
+    }
+    if ($value < 0x1000000000000)
+    {
+        return sprintf("${sign}0x%012x", $value);
+    }
+    return sprintf("0x%016x", $value);
 }

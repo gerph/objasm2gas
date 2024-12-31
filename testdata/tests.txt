@@ -37,6 +37,9 @@ Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 Test: Constants for values
 Args: definitions/constants
 
+Test: Constants with expressions for values
+Args: definitions/constants_expressions
+
 Test: Mappings for values
 Args: definitions/mappings
 

@@ -18,4 +18,7 @@ Constant_5                          # 1
         LDRNE   r0, Constant_5
 label   LDRB    r0, Constant_5
 
+        ADR     r0, Constant_1
+        LDR     r0, =Constant_1
+
         END
