@@ -806,7 +806,7 @@ sub single_line_conv {
     $line =~ s/\b$_(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$_}$1"$2"/ foreach (keys %miscquoted_op);
 
     # ------ Conversion: labels on instructions ------
-    if ($line =~ m/^([a-zA-Z_]+)(\s+)([A-Z])/) {
+    if ($line =~ m/^([a-zA-Z_][a-zA-Z_0-9]*)(\s+)([A-Z])/) {
         my $label = $1;
         my $spaces = $2;
         my $inst1 = $3;
