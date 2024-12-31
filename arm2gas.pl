@@ -686,6 +686,8 @@ sub single_line_conv {
         $line = join "", map { "$prefix$_\n" } @lines;
     }
 
+    $line =~ s/\b$_\b/$misc_op{$_}/ foreach (keys %misc_op);
+
     # ------ Conversion: labels on instructions ------
     if ($line =~ m/^([a-zA-Z_]+)(\s+)([A-Z])/) {
         my $label = $1;
@@ -694,8 +696,6 @@ sub single_line_conv {
         my $prefix = (' ' x length($label)) . $spaces;
         $line =~ s/$label$spaces$inst1/$label:\n$prefix$inst1/;
     }
-
-    $line =~ s/\b$_\b/$misc_op{$_}/ foreach (keys %misc_op);
 
     # ------ Conversion: symbol definition ------
     if ($line =~ m/LCL([A|L|S])\s+(\w+)/i) {

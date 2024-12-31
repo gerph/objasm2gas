@@ -34,11 +34,21 @@ Test: Unrecognised flag
 Args: sections/unrecognised --strict
 RC: 3
 
+
+
 Group: Data file
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 
 Test: Example data for AArch64
 Args: data/aarch64_helloworld
+
+
+Group: Register naming
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+
+Test: Register naming
+Args: regnaming/renaming
+
 
 
 Group: Definitions
