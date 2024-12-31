@@ -17,4 +17,4 @@
 ; C-linkable readonly data
         AREA    |C$$data|, DATA, READONLY
 
-        MOV     pc, lr
+        = "Hello world", 0

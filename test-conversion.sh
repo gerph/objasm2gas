@@ -24,6 +24,9 @@ done
 # Ensure that the output directory exists
 if [[ "$output" != '' ]] ; then
     mkdir -p "$(dirname "$output")"
+    # Also create the expectation directory, if we can.
+    expect=${output/gas/expect}
+    mkdir -p "$(dirname "$expect")"
 fi
 "${here}"/arm2gas.pl "$@"
 

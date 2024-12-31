@@ -1,0 +1,19 @@
+//
+// Constants that have expressions in them
+//
+
+.set XBit, 0x020000
+
+.set SWIBase, 0x046000
+.set FirstSWI, 0x046000
+.set SecondSWI, 0x046001
+
+.set XFirstSWI, 0x066000
+
+        .section .text.Example, "ax"
+
+        .word     FirstSWI
+        .word     SecondSWI
+
+        .end
+

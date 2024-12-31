@@ -1,0 +1,16 @@
+//
+// Constants are just simple assignments
+//
+
+.set Constant_0, 0
+.set Constant_1, 1
+.set Constant_5, 5
+
+        .section .text.Example, "ax"
+
+        .word     Constant_0
+        .word     Constant_1
+        .word     Constant_5
+
+        .end
+

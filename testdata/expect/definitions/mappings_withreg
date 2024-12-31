@@ -1,0 +1,25 @@
+//
+// Mappings take two forms - those that are with register and those without.
+//
+
+// With a register
+.set Constant_0, 0
+.set Constant_1, 1
+.set Constant_5, 5
+
+        .section .text.Example, "ax"
+
+        .word     Constant_0
+        .word     Constant_1
+        .word     Constant_5
+
+        LDR     r0, [r7, #5]
+        LDRNE   r0, [r7, #5]
+label:
+        LDRB    r0, [r7, #5]
+
+        ADD     r0, r7, #1
+        LDR     r0, =Constant_1
+
+        .end
+

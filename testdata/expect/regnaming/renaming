@@ -1,0 +1,8 @@
+
+// Register renaming is useful to be able to keep semantic names for regs
+
+pw          .req  r12
+pwp         .req  r12
+
+        LDR     pw, [pwp]
+

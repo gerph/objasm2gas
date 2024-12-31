@@ -1,0 +1,24 @@
+
+        .section .text.Asm, "ax"
+// Actually AArch64, but meh
+// Based on https://www.iconbar.com/news/uploaded/2023/advent/rooladvent_3.png
+// but actually using a system call to print a string.
+
+code:
+        .word     0xa9bf7bfd       // STP       x29, lr, [sp, #-16]!
+        .word     0x910003fd       // MOV       x29, sp
+        .word     0x100000c0       // ADR       x0, 0x18
+        .word     0xd280004a       // MOV       x10, #2
+        .word     0xd4000001       // SVC (x10 = OS_Write0)
+        .word     0x52800000       // MOV       w0, #0
+        .word     0xa8c17bfd       // LDP       x29, lr, [sp], 16
+        .word     0xd65f03c0       // RET
+
+message:
+        .ascii "Hello world!"
+        .byte 10
+        .byte 0
+
+        .end
+
+

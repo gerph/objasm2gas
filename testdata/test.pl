@@ -279,6 +279,9 @@ my $groups_in_junitxml_classes = 1;
 # Name of the test script to execute
 my $testscript = $riscos ? "tests/txt" : "tests.txt";
 
+# Whether filenames are translated to POSIX from RISCOS (and vice-versa)
+my $no_riscos_names = 0;
+
 # Colour configuration
 my $reset_colour = "\e[0m";
 my $fail_colour = "\e[31m";
@@ -346,6 +349,10 @@ while ($arg = shift)
         elsif ($switch eq 'show-diff')
         {
             $outputdiff = 1;
+        }
+        elsif ($switch eq 'no-riscos-names')
+        {
+            $no_riscos_names = 1;
         }
         elsif ($switch eq 'save-output')
         {
@@ -1050,6 +1057,8 @@ sub native_filename
     my ($filename) = @_;
 
     die "No filename passed to native_filename" if (!defined $filename);
+
+    return $filename if ($no_riscos_names);
 
     print "('$filename'" if ($debug_filename);
     # First the directory exchanges

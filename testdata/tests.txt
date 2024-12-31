@@ -26,18 +26,24 @@
 
 Group: Sections
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s $ARG2
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
 
 Test: Section declarations
 Args: sections/code_and_data
 
 Test: Unrecognised flag
 Args: sections/unrecognised --strict
+-Creates:
+Absent: gas/$ARG1.s
 RC: 3
 
 
 
 Group: Data file
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
 
 Test: Example data for AArch64
 Args: data/aarch64_helloworld
@@ -45,6 +51,8 @@ Args: data/aarch64_helloworld
 
 Group: Register naming
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
 
 Test: Register naming
 Args: regnaming/renaming
@@ -53,6 +61,8 @@ Args: regnaming/renaming
 
 Group: Definitions
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
 
 Test: Constants for values
 Args: definitions/constants

@@ -1,0 +1,26 @@
+//
+// Mappings take two forms - those that are with register and those without.
+//
+
+// Without a register
+.set Constant_0, 0
+.set Constant_1, 1
+.set Constant_5, 5
+
+.set Large, 0x049000
+.set Larger, 0x049004
+
+        .section .text.Example, "ax"
+
+        .word     Constant_0
+        .word     Constant_1
+        .word     Constant_5
+
+        LDR     r1, =Constant_1
+        LDR     r2, =Large
+        LDR     r2, =Larger
+
+        ADD     r1, r1, #Large
+
+        .end
+

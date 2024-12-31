@@ -225,6 +225,7 @@ if (@output_files == 0) {
 }
 my %in_out_files;
 @in_out_files{@input_files} = @output_files;
+my $writing;
 
 
 # Variable definitions
@@ -232,6 +233,14 @@ my $mapping_base        = 0;
 my $mapping_register    = undef;
 my %mapping             = ();
 my %constant            = ();
+END {
+    # If we failing whilst writing a file, delete it.
+    if (defined $writing)
+    {
+        unlink $writing;
+    }
+}
+
 
 # file processing
 foreach (keys %in_out_files) {
@@ -252,6 +261,7 @@ foreach (keys %in_out_files) {
     {
         open($f_out, ">", $out_file)
             or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+        $writing = $out_file;
     }
 
     open(my $f_in, "<", $_)
@@ -261,6 +271,7 @@ foreach (keys %in_out_files) {
 
     close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
     close $f_out or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+    $writing = undef;
 }
 
 

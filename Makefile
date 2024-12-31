@@ -20,7 +20,7 @@ ${CROSS}:
 
 
 tests: ${CROSS} testdata/test.pl dirs
-	AS="${AS}" perl testdata/test.pl -junitxml artifacts/junit.xml -script tests.txt -show-command -show-output "../test-conversion.sh" testdata
+	AS="${AS}" perl testdata/test.pl -no-riscos-names -junitxml artifacts/junit.xml -script tests.txt -show-command -show-output "../test-conversion.sh" testdata
 
 dirs:
 	mkdir -p artifacts
