@@ -154,6 +154,10 @@ our @regnames = (
 # Regular expression to match any of the registers
 our $regnames_re = "(?:" . (join "|", sort { length($a) <=> length($b) } @regnames) . ")";
 
+# RISC OS extensions that we transform
+my $extensions_dir_re = "s|hdr|c|h|cmhg|s_c|o|aof|bin|x";
+
+
 #--------------------------------
 # function definitions
 #--------------------------------
@@ -333,13 +337,54 @@ sub resolve_filename {
     return $filename if (-f $filename);
 
     my $newfilename;
+    my $basedir;
 
     # Apply the filename to the relative location of the current source file.
-    $newfilename = $in_file;
-    $newfilename =~ s/[^\/]+$//;   # Trim leafname
-    if ($newfilename ne '')
+    $basedir = $in_file;
+    $basedir =~ s/[^\/]+$//;   # Trim leafname
+    if ($basedir ne '')
     {
-        $newfilename = "$newfilename$filename";
+        $newfilename = "$basedir$filename";
+        return $newfilename if (-f $newfilename);
+    }
+
+    # If the base directory is in unix form of the RISC OS extensions, strip it.
+    # Ie if the source file was <dirs>/s/<leaf> the base directory is <dirs>
+    if ($basedir =~ /(^|.*\/)($extensions_dir_re)$/)
+    {
+        $basedir = $1;
+    }
+
+    # We'll try to apply the file that was supplied again
+    if ($basedir ne '')
+    {
+        $newfilename = "$basedir$filename";
+        return $newfilename if (-f $newfilename);
+    }
+
+    # Now let's try applying the filename given as a RISC OS style filename
+    my $unixised = $filename;
+    # Convert (<dirs>.)?s.<leaf> to <dirs>/s/<leaf>
+    if ($unixised =~ /(^|.*\.)($extensions_dir_re)\.([^\.]+)$/)
+    {
+        $unixised =~ tr!/.!./!;
+        $newfilename = "$basedir$unixised";
+        return $newfilename if (-f $newfilename);
+    }
+
+    # Let's try it with the names transformed
+    # For example convert hdr.foo to foo.hdr
+    if ($unixised =~ /(^|.*\/)($extensions_dir_re)\/([^\/]+)$/)
+    {
+        my $newfilename = "$basedir$1$3.$2";
+        return $newfilename if (-f $newfilename);
+    }
+
+    # Try it the other way around.
+    # If they gave us foo.hdr check this as hdr/foo.
+    if ($unixised =~ /(^|.*\/)([^\.]+)\.($extensions_dir_re)$/)
+    {
+        my $newfilename = "$basedir$1$3/$2";
         return $newfilename if (-f $newfilename);
     }
 
