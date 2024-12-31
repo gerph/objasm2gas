@@ -1,0 +1,11 @@
+// Test that we included a file.
+
+// This file is included
+
+.set Constant, 1
+
+
+
+        .word     Constant
+
+

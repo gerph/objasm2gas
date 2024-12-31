@@ -75,3 +75,12 @@ Args: definitions/mappings
 
 Test: Mappings with regbase for values
 Args: definitions/mappings_withreg
+
+
+Group: Including files
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --inline
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: GET a header relative to source
+Args: includes/get_file

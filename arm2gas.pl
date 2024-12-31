@@ -28,6 +28,7 @@ Options:
     -v, --version               Show version info
     -w, --no-warning            Suppress all warning messages
     -x, --suffix=<string>       Suffix of the output filename [default: '.out']
+    --inline                    Process GET and INCLUDE inline
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
@@ -69,12 +70,6 @@ RETVAL
 # global definitions
 #--------------------------------
 
-# conversion result
-our %result = (
-    res => '',
-    inc => 0
-);
-
 # stack
 our @symbols = ();
 
@@ -84,6 +79,7 @@ our $opt_verbose     = 0;
 our $opt_strict      = 0;
 our $opt_nocomment   = 0;
 our $opt_nowarning   = 0;
+our $opt_inline      = 0;
 
 # directives for validation only
 our @drctv_nullary = (
@@ -119,8 +115,6 @@ our %misc_op = (
     "END"       =>  ".end",
     "WHILE"     =>  ".rept",
     "WEND"      =>  ".endr",
-    "GET"       =>  ".include",
-    "INCLUDE"   =>  ".include",
     "IMPORT"    =>  ".global",  # check before (weak attr)
     "EXTERN"    =>  ".global",
     "GLOBAL"    =>  ".global",
@@ -137,6 +131,10 @@ our %misc_op = (
     "SPACE"     =>  ".space",
     "ENTRY"     =>  ""
 );
+# simple replace with quoted strings
+our %miscquoted_op = (
+    );
+
 
 # variable initial value
 our %init_val = (
@@ -200,8 +198,9 @@ GetOptions(
     "i|verbose"     => \$opt_verbose,
     "s|strict"      => \$opt_strict,
     "n|no-comment"  => \$opt_nocomment,
-    "w|no-warning"  => \$opt_nowarning
-) or die("I'm die.\n");
+    "w|no-warning"  => \$opt_nowarning,
+    "inline"        => \$opt_inline
+) or die("Conversion of ObjASM source to GAS source failed\n");
 
 @input_files = @ARGV;
 
@@ -227,6 +226,15 @@ my %in_out_files;
 @in_out_files{@input_files} = @output_files;
 my $writing;
 
+if (!$opt_inline)
+{
+    %miscquoted_op = (
+        %miscquoted_op,
+        "GET"       =>  ".include",
+        "INCLUDE"   =>  ".include",
+    );
+}
+
 
 # Variable definitions
 my $mapping_base        = 0;
@@ -247,7 +255,7 @@ foreach (keys %in_out_files) {
     # global vars for diagnosis
     our $in_file  = $_;
     our $out_file = $in_out_files{$_};
-    our $line_n2  = 1;
+    our $linenum_output  = 1;
     our $context;
 
     our $f_out;
@@ -280,12 +288,12 @@ sub process_file {
 
     our $in_file;
     our $out_file;
-    our $line_n1;
-    our $line_n2;
+    our $linenum_input;
+    our $linenum_output;
     our $context;
     our $f_out;
     # Remember the caller's context
-    my @caller_context = ($in_file, $line_n1, $context);
+    my @caller_context = ($in_file, $linenum_input, $context);
     my $our_context = '';
     # Strip the last output line reference
     $context =~ s/ -> [^ ]+$// if ($context);
@@ -294,32 +302,76 @@ sub process_file {
         $our_context = "$context -> ";
     }
 
-    $line_n1 = 1;
+    $in_file = $filename;
+    $linenum_input = 1;
     while (my $line = <$f_in>) {
-        $context = "$our_context$in_file:$line_n1 -> $out_file:$line_n2";
-        single_line_conv($line);
-        print $f_out $result{res};
-        $line_n1++;
-        $line_n2 += $result{inc};
+        $context = "$our_context$in_file:$linenum_input -> $out_file:$linenum_output";
+        $linenum_input++;
+        if ($opt_inline && $line =~ /^\s+END\s*$/)
+        {
+            # Handle explicit file end here.
+            last;
+        }
+        my $outputline = single_line_conv($line);
+        if (defined $outputline)
+        {
+            print $f_out $outputline;
+            my @nlines = ($outputline =~ m/\n/g);
+            $linenum_output += scalar(@nlines);
+        }
     }
     print $f_out "\n";  # required by as
+    $linenum_output += 1;
 
-    ($in_file, $line_n1, $context) = @caller_context;
+    ($in_file, $linenum_input, $context) = @caller_context;
 }
+
+
+sub resolve_filename {
+    my ($filename) = @_;
+    our $in_file;
+    return $filename if (-f $filename);
+
+    my $newfilename;
+
+    # Apply the filename to the relative location of the current source file.
+    $newfilename = $in_file;
+    $newfilename =~ s/[^\/]+$//;   # Trim leafname
+    if ($newfilename ne '')
+    {
+        $newfilename = "$newfilename$filename";
+        return $newfilename if (-f $newfilename);
+    }
+
+    exit_error($ERR_IO, "$0:".__LINE__.": $filename: Cannot find file")
+}
+
+
+sub include_file {
+    my ($filename) = @_;
+
+    $filename = resolve_filename($filename);
+
+    open(my $f_in, "<", $filename)
+        or exit_error($ERR_IO, "$0:".__LINE__.": $filename: $!");
+
+    process_file($f_in, $filename);
+
+    close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $filename: $!");
+}
+
 
 sub single_line_conv {
     our $in_file;
     our $out_file;
-    our $line_n1;
-    our $line_n2;
+    our $linenum_input;
+    our $linenum_output;
     our $context;
     my $line = shift;
-    $result{inc} = 1;
 
     # empty line
     if ($line =~ m/^\s*$/) {
-        $result{res} = "\n";    # just keep it
-        return;
+        return "\n";    # just keep it
     }
 
     # warn if detect a string
@@ -338,6 +390,18 @@ sub single_line_conv {
             $line =~ s/(^|\s+);/$1\/\//;
         }
 
+    }
+
+    # ------ Conversion: includes ------
+    if ($opt_inline && $line =~ m/\s+(GET|INCLUDE)\s+([_a-zA-Z0-9\/\.]*)\s*(\/\/.*)?$/) {
+        my $file = $2;
+        my $comment = $3 // '';
+        msg_info($context.
+            ": Inline inclusion of '$file'");
+
+        include_file($file);
+
+        return undef;
     }
 
     # remove special symbol delimiter
@@ -396,7 +460,6 @@ sub single_line_conv {
         if ($opt_compatible) {
             push @symbols, $func_name;
             $line =~ s/$func_name\s+PROC(.*)$/.type $func_name, "function"$1\n$func_name:/i;
-            $result{inc}++;
         }
         else {
             $line =~ s/$func_name\s+PROC/.func $func_name/i;
@@ -407,7 +470,6 @@ sub single_line_conv {
             my $func_name = pop @symbols;
             my $func_end  = ".L$func_name"."_end";
             $line =~ s/^(\s*)ENDP(.*)$/$func_end:$2\n$1.size $func_name, $func_end-$func_name/i;
-            $result{inc}++;
         }
         else {
             $line =~ s/ENDP/.endfunc/i;
@@ -507,7 +569,6 @@ sub single_line_conv {
         my $indent = $1;
         if (defined($align)) {
             $line .= "$indent.balign " . (2**$1) . "\n";
-            $result{inc}++;
         }
     }
 
@@ -522,7 +583,6 @@ sub single_line_conv {
             ", converting to explicit shift");
         $line =~ s/,\s*$op\s*$imp_shift//i;
         $line .= $indent . "$op $reg, $reg, $imp_shift\n";
-        $result{inc}++;
     }
 
     # Expand numeric literals
@@ -698,6 +758,7 @@ sub single_line_conv {
     }
 
     $line =~ s/\b$_\b/$misc_op{$_}/ foreach (keys %misc_op);
+    $line =~ s/\b$_(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$_}$1"$2"/ foreach (keys %miscquoted_op);
 
     # ------ Conversion: labels on instructions ------
     if ($line =~ m/^([a-zA-Z_]+)(\s+)([A-Z])/) {
@@ -725,7 +786,6 @@ sub single_line_conv {
         $line =~ s/GBL$var_type/.set/i;
         $line =~ s/$var_name/"$var_name, ".$init_val{$var_type}/ei;
         $line = "$indent.global $var_name\n" . $line;
-        $result{inc}++;
     }
     elsif ($line =~ m/(\w+)\s*(SET[A|L|S])/i) {
         my $var_name = $1;
@@ -737,12 +797,9 @@ sub single_line_conv {
     # postprocess
     if ($line =~ m/^\s*$/) {
         # delete empty line
-        $result{res} = "";
-        $result{inc}--;
+        return undef;
     }
-    else {
-        $result{res} = $line;
-    }
+    return $line;
 }
 
 sub dec2hex {
