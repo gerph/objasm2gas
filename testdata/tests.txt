@@ -24,6 +24,16 @@
 #    $SFILE     - Source assembler filename (in format supplied)
 #
 
+Group: Sections
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s $ARG2
+
+Test: Section declarations
+Args: sections/code_and_data
+
+Test: Unrecognised flag
+Args: sections/unrecognised --strict
+RC: 3
+
 Group: Data file
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 

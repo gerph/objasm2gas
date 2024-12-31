@@ -238,13 +238,10 @@ foreach (keys %in_out_files) {
     # global vars for diagnosis
     our $in_file  = $_;
     our $out_file = $in_out_files{$_};
-    our $line_n1  = 1;
     our $line_n2  = 1;
     our $context;
 
-    open(my $f_in, "<", $_)
-        or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
-    my $f_out;
+    our $f_out;
     if ($out_file eq '-')
     {
         # Write to the stdout stream
@@ -257,8 +254,38 @@ foreach (keys %in_out_files) {
             or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
     }
 
+    open(my $f_in, "<", $_)
+        or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
+
+    process_file($f_in, $in_file, undef);
+
+    close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
+    close $f_out or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+}
+
+
+sub process_file {
+    my ($f_in, $filename) = @_;
+
+    our $in_file;
+    our $out_file;
+    our $line_n1;
+    our $line_n2;
+    our $context;
+    our $f_out;
+    # Remember the caller's context
+    my @caller_context = ($in_file, $line_n1, $context);
+    my $our_context = '';
+    # Strip the last output line reference
+    $context =~ s/ -> [^ ]+$// if ($context);
+    if ($context)
+    {
+        $our_context = "$context -> ";
+    }
+
+    $line_n1 = 1;
     while (my $line = <$f_in>) {
-        $context = "$in_file:$line_n1 -> $out_file:$line_n2";
+        $context = "$our_context$in_file:$line_n1 -> $out_file:$line_n2";
         single_line_conv($line);
         print $f_out $result{res};
         $line_n1++;
@@ -266,8 +293,7 @@ foreach (keys %in_out_files) {
     }
     print $f_out "\n";  # required by as
 
-    close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
-    close $f_out or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+    ($in_file, $line_n1, $context) = @caller_context;
 }
 
 sub single_line_conv {
@@ -391,7 +417,7 @@ sub single_line_conv {
         for (@options) {
             s/^ *//;
             s/ *$//;
-            $args .= ", \@progbits" if (s/DATA//i);
+            $args .= ", \%progbits" if (s/DATA//i);
             $args .= ", $1" if (m/MERGE\s*=\s*(\d+)/i);
             $args .= ", $1" if (m/GROUP\s*=\s*\|*(\w+)\|*/i);
 
@@ -414,7 +440,7 @@ sub single_line_conv {
                 push @warnings, $_;
             }
         }
-        if (!$marked_readonly && $args =~ /\@progbits/ && $flags !~ /w/)
+        if (!$marked_readonly && $args =~ /\%progbits/ && $flags !~ /w/)
         {
             # It's data, and they didn't mark as readonly, and didn't say READWRITE
             # So it must be readwrite (ObjAsm defaults to read-write if you don't say)
@@ -423,9 +449,9 @@ sub single_line_conv {
         if (scalar(@warnings) > 0)
         {
             # Only generate a warning when there was something we didn't understand
-            msg_warn(0, "$context".
+            msg_warn(1, "$context".
                 ": Not all AREA attributes are supported".
-                ", (ignored: " . join(', ', @warnings) . ")");
+                " (ignored: " . join(', ', @warnings) . ")");
         }
 
         # Fix up the section name
@@ -441,7 +467,7 @@ sub single_line_conv {
             $sec_name =~ s/\$\$?(code|data)//i;
             $sec_name =~ s/\$/_/;
             my $sec = '.text';
-            if ($args =~ /\@progbits/)
+            if ($args =~ /\%progbits/)
             {
                 if ($flags =~ /w/)
                 {
@@ -456,11 +482,11 @@ sub single_line_conv {
             if ($sec_name eq 'C')
             {
                 # C code, so just put it in a .text / .rodata / .data area
-                $sec_name = '.text';
+                $sec_name = "$sec";
             }
             else
             {
-                $sec_name = ".text.$sec_name";
+                $sec_name = "$sec.$sec_name";
             }
         }
 
