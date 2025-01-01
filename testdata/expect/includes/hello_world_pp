@@ -1,0 +1,2441 @@
+
+        .section .text.Test, "ax"
+
+// Was AUTOMATICALLY generated header, but now manually edited
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ADFS
+.set ADFS_DiscOp, 0x040240
+.set XADFS_DiscOp, 0x060240
+
+.set ADFS_HDC, 0x040241
+.set XADFS_HDC, 0x060241
+
+.set ADFS_Drives, 0x040242
+.set XADFS_Drives, 0x060242
+
+.set ADFS_FreeSpace, 0x040243
+.set XADFS_FreeSpace, 0x060243
+
+.set ADFS_Retries, 0x040244
+.set XADFS_Retries, 0x060244
+
+.set ADFS_DescribeDisc, 0x040245
+.set XADFS_DescribeDisc, 0x060245
+
+.set ADFS_VetFormat, 0x040246
+.set XADFS_VetFormat, 0x060246
+
+.set ADFS_FlpProcessDCB, 0x040247
+.set XADFS_FlpProcessDCB, 0x060247
+
+.set ADFS_ControllerType, 0x040248
+.set XADFS_ControllerType, 0x060248
+
+.set ADFS_PowerControl, 0x040249
+.set XADFS_PowerControl, 0x060249
+
+.set ADFS_SetIDEController, 0x04024a
+.set XADFS_SetIDEController, 0x06024a
+
+.set ADFS_IDEUserOp, 0x04024b
+.set XADFS_IDEUserOp, 0x06024b
+
+.set ADFS_MiscOp, 0x04024c
+.set XADFS_MiscOp, 0x06024c
+
+.set ADFS_SectorDiscOp, 0x04024d
+.set XADFS_SectorDiscOp, 0x06024d
+
+.set ADFS_NOP2, 0x04024e
+.set XADFS_NOP2, 0x06024e
+
+.set ADFS_NOP3, 0x04024f
+.set XADFS_NOP3, 0x06024f
+
+.set ADFS_ECCSAndRetries, 0x040250
+.set XADFS_ECCSAndRetries, 0x060250
+
+.set ADFS_LockIDE, 0x040251
+.set XADFS_LockIDE, 0x060251
+
+.set ADFS_FreeSpace64, 0x040252
+.set XADFS_FreeSpace64, 0x060252
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ATAPI
+.set ATAPI_GetDrives, 0x04a740
+.set XATAPI_GetDrives, 0x06a740
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Buffer
+.set Buffer_Create, 0x042940
+.set XBuffer_Create, 0x062940
+
+.set Buffer_Remove, 0x042941
+.set XBuffer_Remove, 0x062941
+
+.set Buffer_Register, 0x042942
+.set XBuffer_Register, 0x062942
+
+.set Buffer_Deregister, 0x042943
+.set XBuffer_Deregister, 0x062943
+
+.set Buffer_ModifyFlags, 0x042944
+.set XBuffer_ModifyFlags, 0x062944
+
+.set Buffer_LinkDevice, 0x042945
+.set XBuffer_LinkDevice, 0x062945
+
+.set Buffer_UnlinkDevice, 0x042946
+.set XBuffer_UnlinkDevice, 0x062946
+
+.set Buffer_GetInfo, 0x042947
+.set XBuffer_GetInfo, 0x062947
+
+.set Buffer_Threshold, 0x042948
+.set XBuffer_Threshold, 0x062948
+
+.set Buffer_InternalInfo, 0x042949
+.set XBuffer_InternalInfo, 0x062949
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ARM3Cache
+.set Cache_Control, 640
+.set XCache_Control, 0x020280
+
+.set Cache_Cacheable, 641
+.set XCache_Cacheable, 0x020281
+
+.set Cache_Updateable, 642
+.set XCache_Updateable, 0x020282
+
+.set Cache_Disruptive, 643
+.set XCache_Disruptive, 0x020283
+
+.set Cache_Flush, 644
+.set XCache_Flush, 0x020284
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/CDROM
+.set CD_Version, 0x041240
+.set XCD_Version, 0x061240
+
+.set CD_ReadData, 0x041241
+.set XCD_ReadData, 0x061241
+
+.set CD_SeekTo, 0x041242
+.set XCD_SeekTo, 0x061242
+
+.set CD_DriveStatus, 0x041243
+.set XCD_DriveStatus, 0x061243
+
+.set CD_DriveReady, 0x041244
+.set XCD_DriveReady, 0x061244
+
+.set CD_GetParameters, 0x041245
+.set XCD_GetParameters, 0x061245
+
+.set CD_SetParameters, 0x041246
+.set XCD_SetParameters, 0x061246
+
+.set CD_OpenDrawer, 0x041247
+.set XCD_OpenDrawer, 0x061247
+
+.set CD_EjectButton, 0x041248
+.set XCD_EjectButton, 0x061248
+
+.set CD_EnquireAddress, 0x041249
+.set XCD_EnquireAddress, 0x061249
+
+.set CD_EnquireDataMode, 0x04124a
+.set XCD_EnquireDataMode, 0x06124a
+
+.set CD_PlayAudio, 0x04124b
+.set XCD_PlayAudio, 0x06124b
+
+.set CD_PlayTrack, 0x04124c
+.set XCD_PlayTrack, 0x06124c
+
+.set CD_AudioPause, 0x04124d
+.set XCD_AudioPause, 0x06124d
+
+.set CD_EnquireTrack, 0x04124e
+.set XCD_EnquireTrack, 0x06124e
+
+.set CD_ReadSubChannel, 0x04124f
+.set XCD_ReadSubChannel, 0x06124f
+
+.set CD_CheckDrive, 0x041250
+.set XCD_CheckDrive, 0x061250
+
+.set CD_DiscChanged, 0x041251
+.set XCD_DiscChanged, 0x061251
+
+.set CD_StopDisc, 0x041252
+.set XCD_StopDisc, 0x061252
+
+.set CD_DiscUsed, 0x041253
+.set XCD_DiscUsed, 0x061253
+
+.set CD_AudioStatus, 0x041254
+.set XCD_AudioStatus, 0x061254
+
+.set CD_Inquiry, 0x041255
+.set XCD_Inquiry, 0x061255
+
+.set CD_DiscHasChanged, 0x041256
+.set XCD_DiscHasChanged, 0x061256
+
+.set CD_Control, 0x041257
+.set XCD_Control, 0x061257
+
+.set CD_Supported, 0x041258
+.set XCD_Supported, 0x061258
+
+.set CD_Prefetch, 0x041259
+.set XCD_Prefetch, 0x061259
+
+.set CD_Reset, 0x04125a
+.set XCD_Reset, 0x06125a
+
+.set CD_CloseDrawer, 0x04125b
+.set XCD_CloseDrawer, 0x06125b
+
+.set CD_IsDrawerLocked, 0x04125c
+.set XCD_IsDrawerLocked, 0x06125c
+
+.set CD_AudioControl, 0x04125d
+.set XCD_AudioControl, 0x06125d
+
+.set CD_LastError, 0x04125e
+.set XCD_LastError, 0x06125e
+
+.set CD_AudioLevel, 0x04125f
+.set XCD_AudioLevel, 0x06125f
+
+.set CD_Register, 0x041260
+.set XCD_Register, 0x061260
+
+.set CD_Unregister, 0x041261
+.set XCD_Unregister, 0x061261
+
+.set CD_ByteCopy, 0x041262
+.set XCD_ByteCopy, 0x061262
+
+.set CD_Identify, 0x041263
+.set XCD_Identify, 0x061263
+
+.set CD_ConvertToLBA, 0x041264
+.set XCD_ConvertToLBA, 0x061264
+
+.set CD_ConvertToMSF, 0x041265
+.set XCD_ConvertToMSF, 0x061265
+
+.set CD_ReadAudio, 0x041266
+.set XCD_ReadAudio, 0x061266
+
+.set CD_ReadUserData, 0x041267
+.set XCD_ReadUserData, 0x061267
+
+.set CD_SeekUserData, 0x041268
+.set XCD_SeekUserData, 0x061268
+
+.set CD_GetAudioParms, 0x041269
+.set XCD_GetAudioParms, 0x061269
+
+.set CD_SetAudioParms, 0x04126a
+.set XCD_SetAudioParms, 0x06126a
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/CDFS
+.set CDFS_ConvertDriveToDevice, 0x041e80
+.set XCDFS_ConvertDriveToDevice, 0x061e80
+
+.set CDFS_SetBufferSize, 0x041e81
+.set XCDFS_SetBufferSize, 0x061e81
+
+.set CDFS_GetBufferSize, 0x041e82
+.set XCDFS_GetBufferSize, 0x061e82
+
+.set CDFS_SetNumberOfDrives, 0x041e83
+.set XCDFS_SetNumberOfDrives, 0x061e83
+
+.set CDFS_GetNumberOfDrives, 0x041e84
+.set XCDFS_GetNumberOfDrives, 0x061e84
+
+.set CDFS_GiveFileType, 0x041e85
+.set XCDFS_GiveFileType, 0x061e85
+
+.set CDFS_DescribeDisc, 0x041e86
+.set XCDFS_DescribeDisc, 0x061e86
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ColourPick
+.set ColourPicker_RegisterModel, 0x047700
+.set XColourPicker_RegisterModel, 0x067700
+
+.set ColourPicker_DeregisterModel, 0x047701
+.set XColourPicker_DeregisterModel, 0x067701
+
+.set ColourPicker_OpenDialogue, 0x047702
+.set XColourPicker_OpenDialogue, 0x067702
+
+.set ColourPicker_CloseDialogue, 0x047703
+.set XColourPicker_CloseDialogue, 0x067703
+
+.set ColourPicker_UpdateDialogue, 0x047704
+.set XColourPicker_UpdateDialogue, 0x067704
+
+.set ColourPicker_ReadDialogue, 0x047705
+.set XColourPicker_ReadDialogue, 0x067705
+
+.set ColourPicker_SetColour, 0x047706
+.set XColourPicker_SetColour, 0x067706
+
+.set ColourPicker_HelpReply, 0x047707
+.set XColourPicker_HelpReply, 0x067707
+
+.set ColourPicker_ModelSWI, 0x047708
+.set XColourPicker_ModelSWI, 0x067708
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ColourTran
+.set ColourTrans_SelectTable, 0x040740
+.set XColourTrans_SelectTable, 0x060740
+
+.set ColourTrans_SelectGCOLTable, 0x040741
+.set XColourTrans_SelectGCOLTable, 0x060741
+
+.set ColourTrans_ReturnGCOL, 0x040742
+.set XColourTrans_ReturnGCOL, 0x060742
+
+.set ColourTrans_SetGCOL, 0x040743
+.set XColourTrans_SetGCOL, 0x060743
+
+.set ColourTrans_ReturnColourNumber, 0x040744
+.set XColourTrans_ReturnColourNumber, 0x060744
+
+.set ColourTrans_ReturnGCOLForMode, 0x040745
+.set XColourTrans_ReturnGCOLForMode, 0x060745
+
+.set ColourTrans_ReturnColourNumberForMode, 0x040746
+.set XColourTrans_ReturnColourNumberForMode, 0x060746
+
+.set ColourTrans_ReturnOppGCOL, 0x040747
+.set XColourTrans_ReturnOppGCOL, 0x060747
+
+.set ColourTrans_SetOppGCOL, 0x040748
+.set XColourTrans_SetOppGCOL, 0x060748
+
+.set ColourTrans_ReturnOppColourNumber, 0x040749
+.set XColourTrans_ReturnOppColourNumber, 0x060749
+
+.set ColourTrans_ReturnOppGCOLForMode, 0x04074a
+.set XColourTrans_ReturnOppGCOLForMode, 0x06074a
+
+.set ColourTrans_ReturnOppColourNumberForMode, 0x04074b
+.set XColourTrans_ReturnOppColourNumberForMode, 0x06074b
+
+.set ColourTrans_GCOLToColourNumber, 0x04074c
+.set XColourTrans_GCOLToColourNumber, 0x06074c
+
+.set ColourTrans_ColourNumberToGCOL, 0x04074d
+.set XColourTrans_ColourNumberToGCOL, 0x06074d
+
+.set ColourTrans_ReturnFontColours, 0x04074e
+.set XColourTrans_ReturnFontColours, 0x06074e
+
+.set ColourTrans_SetFontColours, 0x04074f
+.set XColourTrans_SetFontColours, 0x06074f
+
+.set ColourTrans_InvalidateCache, 0x040750
+.set XColourTrans_InvalidateCache, 0x060750
+
+.set ColourTrans_SetCalibration, 0x040751
+.set XColourTrans_SetCalibration, 0x060751
+
+.set ColourTrans_ReadCalibration, 0x040752
+.set XColourTrans_ReadCalibration, 0x060752
+
+.set ColourTrans_ConvertDeviceColour, 0x040753
+.set XColourTrans_ConvertDeviceColour, 0x060753
+
+.set ColourTrans_ConvertDevicePalette, 0x040754
+.set XColourTrans_ConvertDevicePalette, 0x060754
+
+.set ColourTrans_ConvertRGBToCIE, 0x040755
+.set XColourTrans_ConvertRGBToCIE, 0x060755
+
+.set ColourTrans_ConvertCIEToRGB, 0x040756
+.set XColourTrans_ConvertCIEToRGB, 0x060756
+
+.set ColourTrans_WriteCalibrationToFile, 0x040757
+.set XColourTrans_WriteCalibrationToFile, 0x060757
+
+.set ColourTrans_ConvertRGBToHSV, 0x040758
+.set XColourTrans_ConvertRGBToHSV, 0x060758
+
+.set ColourTrans_ConvertHSVToRGB, 0x040759
+.set XColourTrans_ConvertHSVToRGB, 0x060759
+
+.set ColourTrans_ConvertRGBToCMYK, 0x04075a
+.set XColourTrans_ConvertRGBToCMYK, 0x06075a
+
+.set ColourTrans_ConvertCMYKToRGB, 0x04075b
+.set XColourTrans_ConvertCMYKToRGB, 0x06075b
+
+.set ColourTrans_ReadPalette, 0x04075c
+.set XColourTrans_ReadPalette, 0x06075c
+
+.set ColourTrans_WritePalette, 0x04075d
+.set XColourTrans_WritePalette, 0x06075d
+
+.set ColourTrans_SetColour, 0x04075e
+.set XColourTrans_SetColour, 0x06075e
+
+.set ColourTrans_MiscOp, 0x04075f
+.set XColourTrans_MiscOp, 0x06075f
+
+.set ColourTrans_WriteLoadingsToFile, 0x040760
+.set XColourTrans_WriteLoadingsToFile, 0x060760
+
+.set ColourTrans_SetTextColour, 0x040761
+.set XColourTrans_SetTextColour, 0x060761
+
+.set ColourTrans_SetOppTextColour, 0x040762
+.set XColourTrans_SetOppTextColour, 0x060762
+
+.set ColourTrans_GenerateTable, 0x040763
+.set XColourTrans_GenerateTable, 0x060763
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Debugger
+.set Debugger_Disassemble, 0x040380
+.set XDebugger_Disassemble, 0x060380
+
+.set Debugger_DisassembleThumb, 0x040381
+.set XDebugger_DisassembleThumb, 0x060381
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/DeviceFS
+.set DeviceFS_Register, 0x042740
+.set XDeviceFS_Register, 0x062740
+
+.set DeviceFS_Deregister, 0x042741
+.set XDeviceFS_Deregister, 0x062741
+
+.set DeviceFS_RegisterObjects, 0x042742
+.set XDeviceFS_RegisterObjects, 0x062742
+
+.set DeviceFS_DeregisterObjects, 0x042743
+.set XDeviceFS_DeregisterObjects, 0x062743
+
+.set DeviceFS_CallDevice, 0x042744
+.set XDeviceFS_CallDevice, 0x062744
+
+.set DeviceFS_Threshold, 0x042745
+.set XDeviceFS_Threshold, 0x062745
+
+.set DeviceFS_ReceivedCharacter, 0x042746
+.set XDeviceFS_ReceivedCharacter, 0x062746
+
+.set DeviceFS_TransmitCharacter, 0x042747
+.set XDeviceFS_TransmitCharacter, 0x062747
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/DMA
+.set DMA_RegisterChannel, 0x046140
+.set XDMA_RegisterChannel, 0x066140
+
+.set DMA_DeregisterChannel, 0x046141
+.set XDMA_DeregisterChannel, 0x066141
+
+.set DMA_QueueTransfer, 0x046142
+.set XDMA_QueueTransfer, 0x066142
+
+.set DMA_TerminateTransfer, 0x046143
+.set XDMA_TerminateTransfer, 0x066143
+
+.set DMA_SuspendTransfer, 0x046144
+.set XDMA_SuspendTransfer, 0x066144
+
+.set DMA_ResumeTransfer, 0x046145
+.set XDMA_ResumeTransfer, 0x066145
+
+.set DMA_ExamineTransfer, 0x046146
+.set XDMA_ExamineTransfer, 0x066146
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/DragASprit
+.set DragASprite_Start, 0x042400
+.set XDragASprite_Start, 0x062400
+
+.set DragASprite_Stop, 0x042401
+.set XDragASprite_Stop, 0x062401
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/DragAnObj
+.set DragAnObject_Start, 0x049c40
+.set XDragAnObject_Start, 0x069c40
+
+.set DragAnObject_Stop, 0x049c41
+.set XDragAnObject_Stop, 0x069c41
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Draw
+.set Draw_ProcessPath, 0x040700
+.set XDraw_ProcessPath, 0x060700
+
+.set Draw_ProcessPathFP, 0x040701
+.set XDraw_ProcessPathFP, 0x060701
+
+.set Draw_Fill, 0x040702
+.set XDraw_Fill, 0x060702
+
+.set Draw_FillFP, 0x040703
+.set XDraw_FillFP, 0x060703
+
+.set Draw_Stroke, 0x040704
+.set XDraw_Stroke, 0x060704
+
+.set Draw_StrokeFP, 0x040705
+.set XDraw_StrokeFP, 0x060705
+
+.set Draw_StrokePath, 0x040706
+.set XDraw_StrokePath, 0x060706
+
+.set Draw_StrokePathFP, 0x040707
+.set XDraw_StrokePathFP, 0x060707
+
+.set Draw_FlattenPath, 0x040708
+.set XDraw_FlattenPath, 0x060708
+
+.set Draw_FlattenPathFP, 0x040709
+.set XDraw_FlattenPathFP, 0x060709
+
+.set Draw_TransformPath, 0x04070a
+.set XDraw_TransformPath, 0x06070a
+
+.set Draw_TransformPathFP, 0x04070b
+.set XDraw_TransformPathFP, 0x06070b
+
+.set Draw_FillClipped, 0x04070c
+.set XDraw_FillClipped, 0x06070c
+
+.set Draw_FillClippedFP, 0x04070d
+.set XDraw_FillClippedFP, 0x06070d
+
+.set Draw_StrokeClipped, 0x04070e
+.set XDraw_StrokeClipped, 0x06070e
+
+.set Draw_StrokeClippedFP, 0x04070f
+.set XDraw_StrokeClippedFP, 0x06070f
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Econet
+.set Econet_CreateReceive, 0x040000
+.set XEconet_CreateReceive, 0x060000
+
+.set Econet_ExamineReceive, 0x040001
+.set XEconet_ExamineReceive, 0x060001
+
+.set Econet_ReadReceive, 0x040002
+.set XEconet_ReadReceive, 0x060002
+
+.set Econet_AbandonReceive, 0x040003
+.set XEconet_AbandonReceive, 0x060003
+
+.set Econet_WaitForReception, 0x040004
+.set XEconet_WaitForReception, 0x060004
+
+.set Econet_EnumerateReceive, 0x040005
+.set XEconet_EnumerateReceive, 0x060005
+
+.set Econet_StartTransmit, 0x040006
+.set XEconet_StartTransmit, 0x060006
+
+.set Econet_PollTransmit, 0x040007
+.set XEconet_PollTransmit, 0x060007
+
+.set Econet_AbandonTransmit, 0x040008
+.set XEconet_AbandonTransmit, 0x060008
+
+.set Econet_DoTransmit, 0x040009
+.set XEconet_DoTransmit, 0x060009
+
+.set Econet_ReadLocalStationAndNet, 0x04000a
+.set XEconet_ReadLocalStationAndNet, 0x06000a
+
+.set Econet_ConvertStatusToString, 0x04000b
+.set XEconet_ConvertStatusToString, 0x06000b
+
+.set Econet_ConvertStatusToError, 0x04000c
+.set XEconet_ConvertStatusToError, 0x06000c
+
+.set Econet_ReadProtection, 0x04000d
+.set XEconet_ReadProtection, 0x06000d
+
+.set Econet_SetProtection, 0x04000e
+.set XEconet_SetProtection, 0x06000e
+
+.set Econet_ReadStationNumber, 0x04000f
+.set XEconet_ReadStationNumber, 0x06000f
+
+.set Econet_PrintBanner, 0x040010
+.set XEconet_PrintBanner, 0x060010
+
+.set Econet_ReadTransportType, 0x040011
+.set XEconet_ReadTransportType, 0x060011
+
+.set Econet_ReleasePort, 0x040012
+.set XEconet_ReleasePort, 0x060012
+
+.set Econet_AllocatePort, 0x040013
+.set XEconet_AllocatePort, 0x060013
+
+.set Econet_DeAllocatePort, 0x040014
+.set XEconet_DeAllocatePort, 0x060014
+
+.set Econet_ClaimPort, 0x040015
+.set XEconet_ClaimPort, 0x060015
+
+.set Econet_StartImmediate, 0x040016
+.set XEconet_StartImmediate, 0x060016
+
+.set Econet_DoImmediate, 0x040017
+.set XEconet_DoImmediate, 0x060017
+
+.set Econet_AbandonAndReadReceive, 0x040018
+.set XEconet_AbandonAndReadReceive, 0x060018
+
+.set Econet_Version, 0x040019
+.set XEconet_Version, 0x060019
+
+.set Econet_NetworkState, 0x04001a
+.set XEconet_NetworkState, 0x06001a
+
+.set Econet_PacketSize, 0x04001b
+.set XEconet_PacketSize, 0x06001b
+
+.set Econet_ReadTransportName, 0x04001c
+.set XEconet_ReadTransportName, 0x06001c
+
+.set Econet_InetRxDirect, 0x04001d
+.set XEconet_InetRxDirect, 0x06001d
+
+.set Econet_EnumerateMap, 0x04001e
+.set XEconet_EnumerateMap, 0x06001e
+
+.set Econet_EnumerateTransmit, 0x04001f
+.set XEconet_EnumerateTransmit, 0x06001f
+
+.set Econet_HardwareAddresses, 0x040020
+.set XEconet_HardwareAddresses, 0x060020
+
+.set Econet_NetworkParameters, 0x040021
+.set XEconet_NetworkParameters, 0x060021
+
+.set NetFS_ReadFSNumber, 0x040040
+.set XNetFS_ReadFSNumber, 0x060040
+
+.set NetFS_SetFSNumber, 0x040041
+.set XNetFS_SetFSNumber, 0x060041
+
+.set NetFS_ReadFSName, 0x040042
+.set XNetFS_ReadFSName, 0x060042
+
+.set NetFS_SetFSName, 0x040043
+.set XNetFS_SetFSName, 0x060043
+
+.set NetFS_ReadCurrentContext, 0x040044
+.set XNetFS_ReadCurrentContext, 0x060044
+
+.set NetFS_SetCurrentContext, 0x040045
+.set XNetFS_SetCurrentContext, 0x060045
+
+.set NetFS_ReadFSTimeouts, 0x040046
+.set XNetFS_ReadFSTimeouts, 0x060046
+
+.set NetFS_SetFSTimeouts, 0x040047
+.set XNetFS_SetFSTimeouts, 0x060047
+
+.set NetFS_DoFSOp, 0x040048
+.set XNetFS_DoFSOp, 0x060048
+
+.set NetFS_EnumerateFSList, 0x040049
+.set XNetFS_EnumerateFSList, 0x060049
+
+.set NetFS_EnumerateFS, 0x04004a
+.set XNetFS_EnumerateFS, 0x06004a
+
+.set NetFS_ConvertDate, 0x04004b
+.set XNetFS_ConvertDate, 0x06004b
+
+.set NetFS_DoFSOpToGivenFS, 0x04004c
+.set XNetFS_DoFSOpToGivenFS, 0x06004c
+
+.set NetFS_UpdateFSList, 0x04004d
+.set XNetFS_UpdateFSList, 0x06004d
+
+.set NetFS_EnumerateFSContexts, 0x04004e
+.set XNetFS_EnumerateFSContexts, 0x06004e
+
+.set NetFS_ReadUserId, 0x04004f
+.set XNetFS_ReadUserId, 0x06004f
+
+.set NetFS_GetObjectUID, 0x040050
+.set XNetFS_GetObjectUID, 0x060050
+
+.set NetFS_EnableCache, 0x040051
+.set XNetFS_EnableCache, 0x060051
+
+.set NetPrint_ReadPSNumber, 0x040200
+.set XNetPrint_ReadPSNumber, 0x060200
+
+.set NetPrint_SetPSNumber, 0x040201
+.set XNetPrint_SetPSNumber, 0x060201
+
+.set NetPrint_ReadPSName, 0x040202
+.set XNetPrint_ReadPSName, 0x060202
+
+.set NetPrint_SetPSName, 0x040203
+.set XNetPrint_SetPSName, 0x060203
+
+.set NetPrint_ReadPSTimeouts, 0x040204
+.set XNetPrint_ReadPSTimeouts, 0x060204
+
+.set NetPrint_SetPSTimeouts, 0x040205
+.set XNetPrint_SetPSTimeouts, 0x060205
+
+.set NetPrint_BindPSName, 0x040206
+.set XNetPrint_BindPSName, 0x060206
+
+.set NetPrint_ListServers, 0x040207
+.set XNetPrint_ListServers, 0x060207
+
+.set NetPrint_ConvertStatusToString, 0x040208
+.set XNetPrint_ConvertStatusToString, 0x060208
+
+.set NetMonitor_PrintChar, 0x080040
+.set XNetMonitor_PrintChar, 0x0a0040
+
+.set NetMonitor_DefineTask, 0x080041
+.set XNetMonitor_DefineTask, 0x0a0041
+
+.set NetMonitor_AbandonTask, 0x080042
+.set XNetMonitor_AbandonTask, 0x0a0042
+
+.set NetMonitor_ConvertFont, 0x080043
+.set XNetMonitor_ConvertFont, 0x0a0043
+
+.set NetMonitor_UseFont, 0x080044
+.set XNetMonitor_UseFont, 0x0a0044
+
+.set NetMonitor_RestoreFont, 0x080045
+.set XNetMonitor_RestoreFont, 0x0a0045
+
+.set NetMonitor_StartWithCurrentFont, 0x080046
+.set XNetMonitor_StartWithCurrentFont, 0x0a0046
+
+.set NetMonitor_StartWithInternalFont, 0x080047
+.set XNetMonitor_StartWithInternalFont, 0x0a0047
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/FileCore
+.set FileCore_DiscOp, 0x040540
+.set XFileCore_DiscOp, 0x060540
+
+.set FileCore_Create, 0x040541
+.set XFileCore_Create, 0x060541
+
+.set FileCore_Drives, 0x040542
+.set XFileCore_Drives, 0x060542
+
+.set FileCore_FreeSpace, 0x040543
+.set XFileCore_FreeSpace, 0x060543
+
+.set FileCore_FloppyStructure, 0x040544
+.set XFileCore_FloppyStructure, 0x060544
+
+.set FileCore_DescribeDisc, 0x040545
+.set XFileCore_DescribeDisc, 0x060545
+
+.set FileCore_DiscardReadSectorsCache, 0x040546
+.set XFileCore_DiscardReadSectorsCache, 0x060546
+
+.set FileCore_DiscFormat, 0x040547
+.set XFileCore_DiscFormat, 0x060547
+
+.set FileCore_LayoutStructure, 0x040548
+.set XFileCore_LayoutStructure, 0x060548
+
+.set FileCore_MiscOp, 0x040549
+.set XFileCore_MiscOp, 0x060549
+
+.set FileCore_SectorDiscOp, 0x04054a
+.set XFileCore_SectorDiscOp, 0x06054a
+
+.set FileCore_FreeSpace64, 0x04054b
+.set XFileCore_FreeSpace64, 0x06054b
+
+.set FileCore_DiscOp64, 0x04054c
+.set XFileCore_DiscOp64, 0x06054c
+
+.set FileCore_Features, 0x04054d
+.set XFileCore_Features, 0x06054d
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/FilerAct
+.set FilerAction_SendSelectedDirectory, 0x040f80
+.set XFilerAction_SendSelectedDirectory, 0x060f80
+
+.set FilerAction_SendSelectedFile, 0x040f81
+.set XFilerAction_SendSelectedFile, 0x060f81
+
+.set FilerAction_SendStartOperation, 0x040f82
+.set XFilerAction_SendStartOperation, 0x060f82
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Filter
+.set Filter_RegisterPreFilter, 0x042640
+.set XFilter_RegisterPreFilter, 0x062640
+
+.set Filter_RegisterPostFilter, 0x042641
+.set XFilter_RegisterPostFilter, 0x062641
+
+.set Filter_DeRegisterPreFilter, 0x042642
+.set XFilter_DeRegisterPreFilter, 0x062642
+
+.set Filter_DeRegisterPostFilter, 0x042643
+.set XFilter_DeRegisterPostFilter, 0x062643
+
+.set Filter_RegisterRectFilter, 0x042644
+.set XFilter_RegisterRectFilter, 0x062644
+
+.set Filter_DeRegisterRectFilter, 0x042645
+.set XFilter_DeRegisterRectFilter, 0x062645
+
+.set Filter_RegisterCopyFilter, 0x042646
+.set XFilter_RegisterCopyFilter, 0x062646
+
+.set Filter_DeRegisterCopyFilter, 0x042647
+.set XFilter_DeRegisterCopyFilter, 0x062647
+
+.set Filter_RegisterPostRectFilter, 0x042648
+.set XFilter_RegisterPostRectFilter, 0x062648
+
+.set Filter_DeRegisterPostRectFilter, 0x042649
+.set XFilter_DeRegisterPostRectFilter, 0x062649
+
+.set Filter_RegisterPostIconFilter, 0x04264a
+.set XFilter_RegisterPostIconFilter, 0x06264a
+
+.set Filter_DeRegisterPostIconFilter, 0x04264b
+.set XFilter_DeRegisterPostIconFilter, 0x06264b
+
+.set Filter_RegisterIconBorderFilter, 0x04264c
+.set XFilter_RegisterIconBorderFilter, 0x06264c
+
+.set Filter_DeRegisterIconBorderFilter, 0x04264d
+.set XFilter_DeRegisterIconBorderFilter, 0x06264d
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Font
+.set Font_CacheAddr, 0x040080
+.set XFont_CacheAddr, 0x060080
+
+.set Font_FindFont, 0x040081
+.set XFont_FindFont, 0x060081
+
+.set Font_LoseFont, 0x040082
+.set XFont_LoseFont, 0x060082
+
+.set Font_ReadDefn, 0x040083
+.set XFont_ReadDefn, 0x060083
+
+.set Font_ReadInfo, 0x040084
+.set XFont_ReadInfo, 0x060084
+
+.set Font_StringWidth, 0x040085
+.set XFont_StringWidth, 0x060085
+
+.set Font_Paint, 0x040086
+.set XFont_Paint, 0x060086
+
+.set Font_Caret, 0x040087
+.set XFont_Caret, 0x060087
+
+.set Font_ConverttoOS, 0x040088
+.set XFont_ConverttoOS, 0x060088
+
+.set Font_Converttopoints, 0x040089
+.set XFont_Converttopoints, 0x060089
+
+.set Font_SetFont, 0x04008a
+.set XFont_SetFont, 0x06008a
+
+.set Font_CurrentFont, 0x04008b
+.set XFont_CurrentFont, 0x06008b
+
+.set Font_FutureFont, 0x04008c
+.set XFont_FutureFont, 0x06008c
+
+.set Font_FindCaret, 0x04008d
+.set XFont_FindCaret, 0x06008d
+
+.set Font_CharBBox, 0x04008e
+.set XFont_CharBBox, 0x06008e
+
+.set Font_ReadScaleFactor, 0x04008f
+.set XFont_ReadScaleFactor, 0x06008f
+
+.set Font_SetScaleFactor, 0x040090
+.set XFont_SetScaleFactor, 0x060090
+
+.set Font_ListFonts, 0x040091
+.set XFont_ListFonts, 0x060091
+
+.set Font_SetFontColours, 0x040092
+.set XFont_SetFontColours, 0x060092
+
+.set Font_SetPalette, 0x040093
+.set XFont_SetPalette, 0x060093
+
+.set Font_ReadThresholds, 0x040094
+.set XFont_ReadThresholds, 0x060094
+
+.set Font_SetThresholds, 0x040095
+.set XFont_SetThresholds, 0x060095
+
+.set Font_FindCaretJ, 0x040096
+.set XFont_FindCaretJ, 0x060096
+
+.set Font_StringBBox, 0x040097
+.set XFont_StringBBox, 0x060097
+
+.set Font_ReadColourTable, 0x040098
+.set XFont_ReadColourTable, 0x060098
+
+.set Font_MakeBitmap, 0x040099
+.set XFont_MakeBitmap, 0x060099
+
+.set Font_UnCacheFile, 0x04009a
+.set XFont_UnCacheFile, 0x06009a
+
+.set Font_SetFontMax, 0x04009b
+.set XFont_SetFontMax, 0x06009b
+
+.set Font_ReadFontMax, 0x04009c
+.set XFont_ReadFontMax, 0x06009c
+
+.set Font_ReadFontPrefix, 0x04009d
+.set XFont_ReadFontPrefix, 0x06009d
+
+.set Font_SwitchOutputToBuffer, 0x04009e
+.set XFont_SwitchOutputToBuffer, 0x06009e
+
+.set Font_ReadFontMetrics, 0x04009f
+.set XFont_ReadFontMetrics, 0x06009f
+
+.set Font_DecodeMenu, 0x0400a0
+.set XFont_DecodeMenu, 0x0600a0
+
+.set Font_ScanString, 0x0400a1
+.set XFont_ScanString, 0x0600a1
+
+.set Font_SetColourTable, 0x0400a2
+.set XFont_SetColourTable, 0x0600a2
+
+.set Font_CurrentRGB, 0x0400a3
+.set XFont_CurrentRGB, 0x0600a3
+
+.set Font_FutureRGB, 0x0400a4
+.set XFont_FutureRGB, 0x0600a4
+
+.set Font_ReadEncodingFilename, 0x0400a5
+.set XFont_ReadEncodingFilename, 0x0600a5
+
+.set Font_FindField, 0x0400a6
+.set XFont_FindField, 0x0600a6
+
+.set Font_ApplyFields, 0x0400a7
+.set XFont_ApplyFields, 0x0600a7
+
+.set Font_LookupFont, 0x0400a8
+.set XFont_LookupFont, 0x0600a8
+
+.set Font_ChangeArea, 0x0400bf
+.set XFont_ChangeArea, 0x0600bf
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Free
+.set Free_Register, 0x0444c0
+.set XFree_Register, 0x0644c0
+
+.set Free_DeRegister, 0x0444c1
+.set XFree_DeRegister, 0x0644c1
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/FSLock
+.set FSLock_Version, 0x044780
+.set XFSLock_Version, 0x064780
+
+.set FSLock_Status, 0x044781
+.set XFSLock_Status, 0x064781
+
+.set FSLock_ChangeStatus, 0x044782
+.set XFSLock_ChangeStatus, 0x064782
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Hourglass
+.set Hourglass_On, 0x0406c0
+.set XHourglass_On, 0x0606c0
+
+.set Hourglass_Off, 0x0406c1
+.set XHourglass_Off, 0x0606c1
+
+.set Hourglass_Smash, 0x0406c2
+.set XHourglass_Smash, 0x0606c2
+
+.set Hourglass_Start, 0x0406c3
+.set XHourglass_Start, 0x0606c3
+
+.set Hourglass_Percentage, 0x0406c4
+.set XHourglass_Percentage, 0x0606c4
+
+.set Hourglass_LEDs, 0x0406c5
+.set XHourglass_LEDs, 0x0606c5
+
+.set Hourglass_Colours, 0x0406c6
+.set XHourglass_Colours, 0x0606c6
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/HostFS
+.set HostFS_HostVdu, 0x040100
+.set XHostFS_HostVdu, 0x060100
+
+.set HostFS_TubeVdu, 0x040101
+.set XHostFS_TubeVdu, 0x060101
+
+.set HostFS_WriteC, 0x040102
+.set XHostFS_WriteC, 0x060102
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/IIC
+.set IIC_Control, 576
+.set XIIC_Control, 0x020240
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/MakePSFont
+.set MakePSFont_MakeFont, 0x043440
+.set XMakePSFont_MakeFont, 0x063440
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/MsgTrans
+.set MessageTrans_FileInfo, 0x041500
+.set XMessageTrans_FileInfo, 0x061500
+
+.set MessageTrans_OpenFile, 0x041501
+.set XMessageTrans_OpenFile, 0x061501
+
+.set MessageTrans_Lookup, 0x041502
+.set XMessageTrans_Lookup, 0x061502
+
+.set MessageTrans_MakeMenus, 0x041503
+.set XMessageTrans_MakeMenus, 0x061503
+
+.set MessageTrans_CloseFile, 0x041504
+.set XMessageTrans_CloseFile, 0x061504
+
+.set MessageTrans_EnumerateTokens, 0x041505
+.set XMessageTrans_EnumerateTokens, 0x061505
+
+.set MessageTrans_ErrorLookup, 0x041506
+.set XMessageTrans_ErrorLookup, 0x061506
+
+.set MessageTrans_GSLookup, 0x041507
+.set XMessageTrans_GSLookup, 0x061507
+
+.set MessageTrans_CopyError, 0x041508
+.set XMessageTrans_CopyError, 0x061508
+
+.set MessageTrans_Dictionary, 0x041509
+.set XMessageTrans_Dictionary, 0x061509
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/RISCOS
+.set OS_WriteC, 0
+.set XOS_WriteC, 0x020000
+
+.set OS_WriteS, 1
+.set XOS_WriteS, 0x020001
+
+.set OS_Write0, 2
+.set XOS_Write0, 0x020002
+
+.set OS_NewLine, 3
+.set XOS_NewLine, 0x020003
+
+.set OS_ReadC, 4
+.set XOS_ReadC, 0x020004
+
+.set OS_CLI, 5
+.set XOS_CLI, 0x020005
+
+.set OS_Byte, 6
+.set XOS_Byte, 0x020006
+
+.set OS_Word, 7
+.set XOS_Word, 0x020007
+
+.set OS_File, 8
+.set XOS_File, 0x020008
+
+.set OS_Args, 9
+.set XOS_Args, 0x020009
+
+.set OS_BGet, 10
+.set XOS_BGet, 0x02000a
+
+.set OS_BPut, 11
+.set XOS_BPut, 0x02000b
+
+.set OS_GBPB, 12
+.set XOS_GBPB, 0x02000c
+
+.set OS_Find, 13
+.set XOS_Find, 0x02000d
+
+.set OS_ReadLine, 14
+.set XOS_ReadLine, 0x02000e
+
+.set OS_Control, 15
+.set XOS_Control, 0x02000f
+
+.set OS_GetEnv, 16
+.set XOS_GetEnv, 0x020010
+
+.set OS_Exit, 17
+.set XOS_Exit, 0x020011
+
+.set OS_SetEnv, 18
+.set XOS_SetEnv, 0x020012
+
+.set OS_IntOn, 19
+.set XOS_IntOn, 0x020013
+
+.set OS_IntOff, 20
+.set XOS_IntOff, 0x020014
+
+.set OS_CallBack, 21
+.set XOS_CallBack, 0x020015
+
+.set OS_EnterOS, 22
+.set XOS_EnterOS, 0x020016
+
+.set OS_BreakPt, 23
+.set XOS_BreakPt, 0x020017
+
+.set OS_BreakCtrl, 24
+.set XOS_BreakCtrl, 0x020018
+
+.set OS_UnusedSWI, 25
+.set XOS_UnusedSWI, 0x020019
+
+.set OS_UpdateMEMC, 26
+.set XOS_UpdateMEMC, 0x02001a
+
+.set OS_SetCallBack, 27
+.set XOS_SetCallBack, 0x02001b
+
+.set OS_Mouse, 28
+.set XOS_Mouse, 0x02001c
+
+.set OS_Heap, 29
+.set XOS_Heap, 0x02001d
+
+.set OS_Module, 30
+.set XOS_Module, 0x02001e
+
+.set OS_Claim, 31
+.set XOS_Claim, 0x02001f
+
+.set OS_Release, 32
+.set XOS_Release, 0x020020
+
+.set OS_ReadUnsigned, 33
+.set XOS_ReadUnsigned, 0x020021
+
+.set OS_GenerateEvent, 34
+.set XOS_GenerateEvent, 0x020022
+
+.set OS_ReadVarVal, 35
+.set XOS_ReadVarVal, 0x020023
+
+.set OS_SetVarVal, 36
+.set XOS_SetVarVal, 0x020024
+
+.set OS_GSInit, 37
+.set XOS_GSInit, 0x020025
+
+.set OS_GSRead, 38
+.set XOS_GSRead, 0x020026
+
+.set OS_GSTrans, 39
+.set XOS_GSTrans, 0x020027
+
+.set OS_BinaryToDecimal, 40
+.set XOS_BinaryToDecimal, 0x020028
+
+.set OS_FSControl, 41
+.set XOS_FSControl, 0x020029
+
+.set OS_ChangeDynamicArea, 42
+.set XOS_ChangeDynamicArea, 0x02002a
+
+.set OS_GenerateError, 43
+.set XOS_GenerateError, 0x02002b
+
+.set OS_ReadEscapeState, 44
+.set XOS_ReadEscapeState, 0x02002c
+
+.set OS_EvaluateExpression, 45
+.set XOS_EvaluateExpression, 0x02002d
+
+.set OS_SpriteOp, 46
+.set XOS_SpriteOp, 0x02002e
+
+.set OS_ReadPalette, 47
+.set XOS_ReadPalette, 0x02002f
+
+.set OS_ServiceCall, 48
+.set XOS_ServiceCall, 0x020030
+
+.set OS_ReadVduVariables, 49
+.set XOS_ReadVduVariables, 0x020031
+
+.set OS_ReadPoint, 50
+.set XOS_ReadPoint, 0x020032
+
+.set OS_UpCall, 51
+.set XOS_UpCall, 0x020033
+
+.set OS_CallAVector, 52
+.set XOS_CallAVector, 0x020034
+
+.set OS_ReadModeVariable, 53
+.set XOS_ReadModeVariable, 0x020035
+
+.set OS_RemoveCursors, 54
+.set XOS_RemoveCursors, 0x020036
+
+.set OS_RestoreCursors, 55
+.set XOS_RestoreCursors, 0x020037
+
+.set OS_SWINumberToString, 56
+.set XOS_SWINumberToString, 0x020038
+
+.set OS_SWINumberFromString, 57
+.set XOS_SWINumberFromString, 0x020039
+
+.set OS_ValidateAddress, 58
+.set XOS_ValidateAddress, 0x02003a
+
+.set OS_CallAfter, 59
+.set XOS_CallAfter, 0x02003b
+
+.set OS_CallEvery, 60
+.set XOS_CallEvery, 0x02003c
+
+.set OS_RemoveTickerEvent, 61
+.set XOS_RemoveTickerEvent, 0x02003d
+
+.set OS_InstallKeyHandler, 62
+.set XOS_InstallKeyHandler, 0x02003e
+
+.set OS_CheckModeValid, 63
+.set XOS_CheckModeValid, 0x02003f
+
+.set OS_ChangeEnvironment, 64
+.set XOS_ChangeEnvironment, 0x020040
+
+.set OS_ClaimScreenMemory, 65
+.set XOS_ClaimScreenMemory, 0x020041
+
+.set OS_ReadMonotonicTime, 66
+.set XOS_ReadMonotonicTime, 0x020042
+
+.set OS_SubstituteArgs, 67
+.set XOS_SubstituteArgs, 0x020043
+
+.set OS_PrettyPrint, 68
+.set XOS_PrettyPrint, 0x020044
+
+.set OS_Plot, 69
+.set XOS_Plot, 0x020045
+
+.set OS_WriteN, 70
+.set XOS_WriteN, 0x020046
+
+.set OS_AddToVector, 71
+.set XOS_AddToVector, 0x020047
+
+.set OS_WriteEnv, 72
+.set XOS_WriteEnv, 0x020048
+
+.set OS_ReadArgs, 73
+.set XOS_ReadArgs, 0x020049
+
+.set OS_ReadRAMFsLimits, 74
+.set XOS_ReadRAMFsLimits, 0x02004a
+
+.set OS_ClaimDeviceVector, 75
+.set XOS_ClaimDeviceVector, 0x02004b
+
+.set OS_ReleaseDeviceVector, 76
+.set XOS_ReleaseDeviceVector, 0x02004c
+
+.set OS_DelinkApplication, 77
+.set XOS_DelinkApplication, 0x02004d
+
+.set OS_RelinkApplication, 78
+.set XOS_RelinkApplication, 0x02004e
+
+.set OS_HeapSort, 79
+.set XOS_HeapSort, 0x02004f
+
+.set OS_ExitAndDie, 80
+.set XOS_ExitAndDie, 0x020050
+
+.set OS_ReadMemMapInfo, 81
+.set XOS_ReadMemMapInfo, 0x020051
+
+.set OS_ReadMemMapEntries, 82
+.set XOS_ReadMemMapEntries, 0x020052
+
+.set OS_SetMemMapEntries, 83
+.set XOS_SetMemMapEntries, 0x020053
+
+.set OS_AddCallBack, 84
+.set XOS_AddCallBack, 0x020054
+
+.set OS_ReadDefaultHandler, 85
+.set XOS_ReadDefaultHandler, 0x020055
+
+.set OS_SetECFOrigin, 86
+.set XOS_SetECFOrigin, 0x020056
+
+.set OS_SerialOp, 87
+.set XOS_SerialOp, 0x020057
+
+.set OS_ReadSysInfo, 88
+.set XOS_ReadSysInfo, 0x020058
+
+.set OS_Confirm, 89
+.set XOS_Confirm, 0x020059
+
+.set OS_ChangedBox, 90
+.set XOS_ChangedBox, 0x02005a
+
+.set OS_CRC, 91
+.set XOS_CRC, 0x02005b
+
+.set OS_ReadDynamicArea, 92
+.set XOS_ReadDynamicArea, 0x02005c
+
+.set OS_PrintChar, 93
+.set XOS_PrintChar, 0x02005d
+
+.set OS_ChangeRedirection, 94
+.set XOS_ChangeRedirection, 0x02005e
+
+.set OS_RemoveCallBack, 95
+.set XOS_RemoveCallBack, 0x02005f
+
+.set OS_FindMemMapEntries, 96
+.set XOS_FindMemMapEntries, 0x020060
+
+.set OS_SetColour, 97
+.set XOS_SetColour, 0x020061
+
+.set OS_ClaimSWI, 98
+.set XOS_ClaimSWI, 0x020062
+
+.set OS_ReleaseSWI, 99
+.set XOS_ReleaseSWI, 0x020063
+
+.set OS_Pointer, 100
+.set XOS_Pointer, 0x020064
+
+.set OS_ScreenMode, 101
+.set XOS_ScreenMode, 0x020065
+
+.set OS_DynamicArea, 102
+.set XOS_DynamicArea, 0x020066
+
+.set OS_AbortTrap, 103
+.set XOS_AbortTrap, 0x020067
+
+.set OS_Memory, 104
+.set XOS_Memory, 0x020068
+
+.set OS_ClaimProcessorVector, 105
+.set XOS_ClaimProcessorVector, 0x020069
+
+.set OS_Reset, 106
+.set XOS_Reset, 0x02006a
+
+.set OS_MMUControl, 107
+.set XOS_MMUControl, 0x02006b
+
+.set OS_ResyncTime, 108
+.set XOS_ResyncTime, 0x02006c
+
+.set OS_PlatformFeatures, 109
+.set XOS_PlatformFeatures, 0x02006d
+
+.set OS_SynchroniseCodeAreas, 110
+.set XOS_SynchroniseCodeAreas, 0x02006e
+
+.set OS_CallASWI, 111
+.set XOS_CallASWI, 0x02006f
+
+.set OS_AMBControl, 112
+.set XOS_AMBControl, 0x020070
+
+.set OS_CallASWIR12, 113
+.set XOS_CallASWIR12, 0x020071
+
+.set OS_SpecialControl, 114
+.set XOS_SpecialControl, 0x020072
+
+.set OS_EnterUSR32, 115
+.set XOS_EnterUSR32, 0x020073
+
+.set OS_EnterUSR26, 116
+.set XOS_EnterUSR26, 0x020074
+
+.set OS_UKSWI75, 117
+.set XOS_UKSWI75, 0x020075
+
+.set OS_UKSWI76, 118
+.set XOS_UKSWI76, 0x020076
+
+.set OS_ClaimOSSWI, 119
+.set XOS_ClaimOSSWI, 0x020077
+
+.set OS_TaskControl, 120
+.set XOS_TaskControl, 0x020078
+
+.set OS_DeviceDriver, 121
+.set XOS_DeviceDriver, 0x020079
+
+.set OS_Hardware, 122
+.set XOS_Hardware, 0x02007a
+
+.set OS_IICOp, 123
+.set XOS_IICOp, 0x02007b
+
+.set OS_LeaveOS, 124
+.set XOS_LeaveOS, 0x02007c
+
+.set OS_ReadLine32, 125
+.set XOS_ReadLine32, 0x02007d
+
+.set OS_SubstituteArgs32, 126
+.set XOS_SubstituteArgs32, 0x02007e
+
+.set OS_HeapSort32, 127
+.set XOS_HeapSort32, 0x02007f
+
+.set OS_ConvertStandardDateAndTime, 192
+.set XOS_ConvertStandardDateAndTime, 0x0200c0
+
+.set OS_ConvertDateAndTime, 193
+.set XOS_ConvertDateAndTime, 0x0200c1
+
+.set OS_ConvertHex1, 208
+.set XOS_ConvertHex1, 0x0200d0
+
+.set OS_ConvertHex2, 209
+.set XOS_ConvertHex2, 0x0200d1
+
+.set OS_ConvertHex4, 210
+.set XOS_ConvertHex4, 0x0200d2
+
+.set OS_ConvertHex6, 211
+.set XOS_ConvertHex6, 0x0200d3
+
+.set OS_ConvertHex8, 212
+.set XOS_ConvertHex8, 0x0200d4
+
+.set OS_ConvertCardinal1, 213
+.set XOS_ConvertCardinal1, 0x0200d5
+
+.set OS_ConvertCardinal2, 214
+.set XOS_ConvertCardinal2, 0x0200d6
+
+.set OS_ConvertCardinal3, 215
+.set XOS_ConvertCardinal3, 0x0200d7
+
+.set OS_ConvertCardinal4, 216
+.set XOS_ConvertCardinal4, 0x0200d8
+
+.set OS_ConvertInteger1, 217
+.set XOS_ConvertInteger1, 0x0200d9
+
+.set OS_ConvertInteger2, 218
+.set XOS_ConvertInteger2, 0x0200da
+
+.set OS_ConvertInteger3, 219
+.set XOS_ConvertInteger3, 0x0200db
+
+.set OS_ConvertInteger4, 220
+.set XOS_ConvertInteger4, 0x0200dc
+
+.set OS_ConvertBinary1, 221
+.set XOS_ConvertBinary1, 0x0200dd
+
+.set OS_ConvertBinary2, 222
+.set XOS_ConvertBinary2, 0x0200de
+
+.set OS_ConvertBinary3, 223
+.set XOS_ConvertBinary3, 0x0200df
+
+.set OS_ConvertBinary4, 224
+.set XOS_ConvertBinary4, 0x0200e0
+
+.set OS_ConvertSpacedCardinal1, 225
+.set XOS_ConvertSpacedCardinal1, 0x0200e1
+
+.set OS_ConvertSpacedCardinal2, 226
+.set XOS_ConvertSpacedCardinal2, 0x0200e2
+
+.set OS_ConvertSpacedCardinal3, 227
+.set XOS_ConvertSpacedCardinal3, 0x0200e3
+
+.set OS_ConvertSpacedCardinal4, 228
+.set XOS_ConvertSpacedCardinal4, 0x0200e4
+
+.set OS_ConvertSpacedInteger1, 229
+.set XOS_ConvertSpacedInteger1, 0x0200e5
+
+.set OS_ConvertSpacedInteger2, 230
+.set XOS_ConvertSpacedInteger2, 0x0200e6
+
+.set OS_ConvertSpacedInteger3, 231
+.set XOS_ConvertSpacedInteger3, 0x0200e7
+
+.set OS_ConvertSpacedInteger4, 232
+.set XOS_ConvertSpacedInteger4, 0x0200e8
+
+.set OS_ConvertFixedNetStation, 233
+.set XOS_ConvertFixedNetStation, 0x0200e9
+
+.set OS_ConvertNetStation, 234
+.set XOS_ConvertNetStation, 0x0200ea
+
+.set OS_ConvertFixedFileSize, 235
+.set XOS_ConvertFixedFileSize, 0x0200eb
+
+.set OS_ConvertFileSize, 236
+.set XOS_ConvertFileSize, 0x0200ec
+
+.set OS_WriteI, 256
+.set XOS_WriteI, 0x020100
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/PDriver
+.set PDriver_Info, 0x080140
+.set XPDriver_Info, 0x0a0140
+
+.set PDriver_SetInfo, 0x080141
+.set XPDriver_SetInfo, 0x0a0141
+
+.set PDriver_CheckFeatures, 0x080142
+.set XPDriver_CheckFeatures, 0x0a0142
+
+.set PDriver_PageSize, 0x080143
+.set XPDriver_PageSize, 0x0a0143
+
+.set PDriver_SetPageSize, 0x080144
+.set XPDriver_SetPageSize, 0x0a0144
+
+.set PDriver_SelectJob, 0x080145
+.set XPDriver_SelectJob, 0x0a0145
+
+.set PDriver_CurrentJob, 0x080146
+.set XPDriver_CurrentJob, 0x0a0146
+
+.set PDriver_FontSWI, 0x080147
+.set XPDriver_FontSWI, 0x0a0147
+
+.set PDriver_EndJob, 0x080148
+.set XPDriver_EndJob, 0x0a0148
+
+.set PDriver_AbortJob, 0x080149
+.set XPDriver_AbortJob, 0x0a0149
+
+.set PDriver_Reset, 0x08014a
+.set XPDriver_Reset, 0x0a014a
+
+.set PDriver_GiveRectangle, 0x08014b
+.set XPDriver_GiveRectangle, 0x0a014b
+
+.set PDriver_DrawPage, 0x08014c
+.set XPDriver_DrawPage, 0x0a014c
+
+.set PDriver_GetRectangle, 0x08014d
+.set XPDriver_GetRectangle, 0x0a014d
+
+.set PDriver_CancelJob, 0x08014e
+.set XPDriver_CancelJob, 0x0a014e
+
+.set PDriver_ScreenDump, 0x08014f
+.set XPDriver_ScreenDump, 0x0a014f
+
+.set PDriver_EnumerateJobs, 0x080150
+.set XPDriver_EnumerateJobs, 0x0a0150
+
+.set PDriver_SetPrinter, 0x080151
+.set XPDriver_SetPrinter, 0x0a0151
+
+.set PDriver_CancelJobWithError, 0x080152
+.set XPDriver_CancelJobWithError, 0x0a0152
+
+.set PDriver_SelectIllustration, 0x080153
+.set XPDriver_SelectIllustration, 0x0a0153
+
+.set PDriver_InsertIllustration, 0x080154
+.set XPDriver_InsertIllustration, 0x0a0154
+
+.set PDriver_DeclareFont, 0x080155
+.set XPDriver_DeclareFont, 0x0a0155
+
+.set PDriver_DeclareDriver, 0x080156
+.set XPDriver_DeclareDriver, 0x0a0156
+
+.set PDriver_RemoveDriver, 0x080157
+.set XPDriver_RemoveDriver, 0x0a0157
+
+.set PDriver_SelectDriver, 0x080158
+.set XPDriver_SelectDriver, 0x0a0158
+
+.set PDriver_EnumerateDrivers, 0x080159
+.set XPDriver_EnumerateDrivers, 0x0a0159
+
+.set PDriver_MiscOp, 0x08015a
+.set XPDriver_MiscOp, 0x0a015a
+
+.set PDriver_MiscOpForDriver, 0x08015b
+.set XPDriver_MiscOpForDriver, 0x0a015b
+
+.set PDriver_SetDriver, 0x08015c
+.set XPDriver_SetDriver, 0x0a015c
+
+.set PDriver_JPEGSWI, 0x08015d
+.set XPDriver_JPEGSWI, 0x0a015d
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/PDumper
+.set PDumper_Info, 0x041b00
+.set XPDumper_Info, 0x061b00
+
+.set PDumper_Claim, 0x041b01
+.set XPDumper_Claim, 0x061b01
+
+.set PDumper_Free, 0x041b02
+.set XPDumper_Free, 0x061b02
+
+.set PDumper_Find, 0x041b03
+.set XPDumper_Find, 0x061b03
+
+.set PDumper_StartJob, 0x041b04
+.set XPDumper_StartJob, 0x061b04
+
+.set PDumper_TidyJob, 0x041b05
+.set XPDumper_TidyJob, 0x061b05
+
+.set PDumper_SetColour, 0x041b06
+.set XPDumper_SetColour, 0x061b06
+
+.set PDumper_PrepareStrip, 0x041b07
+.set XPDumper_PrepareStrip, 0x061b07
+
+.set PDumper_LookupError, 0x041b08
+.set XPDumper_LookupError, 0x061b08
+
+.set PDumper_CopyFilename, 0x041b09
+.set XPDumper_CopyFilename, 0x061b09
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Podule
+.set Podule_ReadID, 0x040280
+.set XPodule_ReadID, 0x060280
+
+.set Podule_ReadHeader, 0x040281
+.set XPodule_ReadHeader, 0x060281
+
+.set Podule_EnumerateChunks, 0x040282
+.set XPodule_EnumerateChunks, 0x060282
+
+.set Podule_ReadChunk, 0x040283
+.set XPodule_ReadChunk, 0x060283
+
+.set Podule_ReadBytes, 0x040284
+.set XPodule_ReadBytes, 0x060284
+
+.set Podule_WriteBytes, 0x040285
+.set XPodule_WriteBytes, 0x060285
+
+.set Podule_CallLoader, 0x040286
+.set XPodule_CallLoader, 0x060286
+
+.set Podule_RawRead, 0x040287
+.set XPodule_RawRead, 0x060287
+
+.set Podule_RawWrite, 0x040288
+.set XPodule_RawWrite, 0x060288
+
+.set Podule_HardwareAddress, 0x040289
+.set XPodule_HardwareAddress, 0x060289
+
+.set Podule_EnumerateChunksWithInfo, 0x04028a
+.set XPodule_EnumerateChunksWithInfo, 0x06028a
+
+.set Podule_HardwareAddresses, 0x04028b
+.set XPodule_HardwareAddresses, 0x06028b
+
+.set Podule_ReturnNumber, 0x04028c
+.set XPodule_ReturnNumber, 0x06028c
+
+.set Podule_ReadInfo, 0x04028d
+.set XPodule_ReadInfo, 0x06028d
+
+.set Podule_SetSpeed, 0x04028e
+.set XPodule_SetSpeed, 0x06028e
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Portable
+.set Portable_Speed, 0x042fc0
+.set XPortable_Speed, 0x062fc0
+
+.set Portable_Control, 0x042fc1
+.set XPortable_Control, 0x062fc1
+
+.set Portable_ReadBMUVariable, 0x042fc2
+.set XPortable_ReadBMUVariable, 0x062fc2
+
+.set Portable_WriteBMUVariable, 0x042fc3
+.set XPortable_WriteBMUVariable, 0x062fc3
+
+.set Portable_CommandBMU, 0x042fc4
+.set XPortable_CommandBMU, 0x062fc4
+
+.set Portable_ReadFeatures, 0x042fc5
+.set XPortable_ReadFeatures, 0x062fc5
+
+.set Portable_Idle, 0x042fc6
+.set XPortable_Idle, 0x062fc6
+
+.set Portable_Stop, 0x042fc7
+.set XPortable_Stop, 0x062fc7
+
+.set Portable_Status, 0x042fc8
+.set XPortable_Status, 0x062fc8
+
+.set Portable_ReadSensor, 0x042fd2
+.set XPortable_ReadSensor, 0x062fd2
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/RAMFS
+.set RamFS_DiscOp, 0x040780
+.set XRamFS_DiscOp, 0x060780
+
+.set RamFS_NOP1, 0x040781
+.set XRamFS_NOP1, 0x060781
+
+.set RamFS_Drives, 0x040782
+.set XRamFS_Drives, 0x060782
+
+.set RamFS_FreeSpace, 0x040783
+.set XRamFS_FreeSpace, 0x060783
+
+.set RamFS_NOP2, 0x040784
+.set XRamFS_NOP2, 0x060784
+
+.set RamFS_DescribeDisc, 0x040785
+.set XRamFS_DescribeDisc, 0x060785
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ResourceFS
+.set ResourceFS_RegisterFiles, 0x041b40
+.set XResourceFS_RegisterFiles, 0x061b40
+
+.set ResourceFS_DeregisterFiles, 0x041b41
+.set XResourceFS_DeregisterFiles, 0x061b41
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ScrBlank
+.set ScreenBlanker_Control, 0x043100
+.set XScreenBlanker_Control, 0x063100
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/ScrModes
+.set ScreenModes_ReadInfo, 0x0487c0
+.set XScreenModes_ReadInfo, 0x0687c0
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/SCSI
+.set SCSI_Version, 0x0403c0
+.set XSCSI_Version, 0x0603c0
+
+.set SCSI_Initialise, 0x0403c1
+.set XSCSI_Initialise, 0x0603c1
+
+.set SCSI_Control, 0x0403c2
+.set XSCSI_Control, 0x0603c2
+
+.set SCSI_Op, 0x0403c3
+.set XSCSI_Op, 0x0603c3
+
+.set SCSI_Status, 0x0403c4
+.set XSCSI_Status, 0x0603c4
+
+.set SCSI_ReadControlLines, 0x0403c5
+.set XSCSI_ReadControlLines, 0x0603c5
+
+.set SCSI_EEProm, 0x0403c6
+.set XSCSI_EEProm, 0x0603c6
+
+.set SCSI_Reserve, 0x0403c7
+.set XSCSI_Reserve, 0x0603c7
+
+.set SCSI_List, 0x0403c8
+.set XSCSI_List, 0x0603c8
+
+.set SCSI_TargetControl, 0x0403c9
+.set XSCSI_TargetControl, 0x0603c9
+
+.set SCSI_LogVersion, 0x041080
+.set XSCSI_LogVersion, 0x061080
+
+.set SCSI_LogList, 0x041081
+.set XSCSI_LogList, 0x061081
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/SCSIFS
+.set SCSIFS_DiscOp, 0x040980
+.set XSCSIFS_DiscOp, 0x060980
+
+.set SCSIFS_NOP1, 0x040981
+.set XSCSIFS_NOP1, 0x060981
+
+.set SCSIFS_Drives, 0x040982
+.set XSCSIFS_Drives, 0x060982
+
+.set SCSIFS_FreeSpace, 0x040983
+.set XSCSIFS_FreeSpace, 0x060983
+
+.set SCSIFS_NOP2, 0x040984
+.set XSCSIFS_NOP2, 0x060984
+
+.set SCSIFS_DescribeDisc, 0x040985
+.set XSCSIFS_DescribeDisc, 0x060985
+
+.set SCSIFS_TestReady, 0x040986
+.set XSCSIFS_TestReady, 0x060986
+
+.set SCSIFS_NOP3, 0x040987
+.set XSCSIFS_NOP3, 0x060987
+
+.set SCSIFS_NOP4, 0x040988
+.set XSCSIFS_NOP4, 0x060988
+
+.set SCSIFS_NOP5, 0x040989
+.set XSCSIFS_NOP5, 0x060989
+
+.set SCSIFS_NOP6, 0x04098a
+.set XSCSIFS_NOP6, 0x06098a
+
+.set SCSIFS_NOP7, 0x04098b
+.set XSCSIFS_NOP7, 0x06098b
+
+.set SCSIFS_MiscOp, 0x04098c
+.set XSCSIFS_MiscOp, 0x06098c
+
+.set SCSIFS_SectorDiscOp, 0x04098d
+.set XSCSIFS_SectorDiscOp, 0x06098d
+
+.set SCSIFS_NOP8, 0x04098e
+.set XSCSIFS_NOP8, 0x06098e
+
+.set SCSIFS_NOP9, 0x04098f
+.set XSCSIFS_NOP9, 0x06098f
+
+.set SCSIFS_NOP10, 0x040990
+.set XSCSIFS_NOP10, 0x060990
+
+.set SCSIFS_NOP11, 0x040991
+.set XSCSIFS_NOP11, 0x060991
+
+.set SCSIFS_FreeSpace64, 0x040992
+.set XSCSIFS_FreeSpace64, 0x060992
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Shell
+.set Shell_Create, 0x0405c0
+.set XShell_Create, 0x0605c0
+
+.set Shell_Destroy, 0x0405c1
+.set XShell_Destroy, 0x0605c1
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Sound
+.set Sound_Configure, 0x040140
+.set XSound_Configure, 0x060140
+
+.set Sound_Enable, 0x040141
+.set XSound_Enable, 0x060141
+
+.set Sound_Stereo, 0x040142
+.set XSound_Stereo, 0x060142
+
+.set Sound_Speaker, 0x040143
+.set XSound_Speaker, 0x060143
+
+.set Sound_Mode, 0x040144
+.set XSound_Mode, 0x060144
+
+.set Sound_LinearHandler, 0x040145
+.set XSound_LinearHandler, 0x060145
+
+.set Sound_SampleRate, 0x040146
+.set XSound_SampleRate, 0x060146
+
+.set Sound_Volume, 0x040180
+.set XSound_Volume, 0x060180
+
+.set Sound_SoundLog, 0x040181
+.set XSound_SoundLog, 0x060181
+
+.set Sound_LogScale, 0x040182
+.set XSound_LogScale, 0x060182
+
+.set Sound_InstallVoice, 0x040183
+.set XSound_InstallVoice, 0x060183
+
+.set Sound_RemoveVoice, 0x040184
+.set XSound_RemoveVoice, 0x060184
+
+.set Sound_AttachVoice, 0x040185
+.set XSound_AttachVoice, 0x060185
+
+.set Sound_ControlPacked, 0x040186
+.set XSound_ControlPacked, 0x060186
+
+.set Sound_Tuning, 0x040187
+.set XSound_Tuning, 0x060187
+
+.set Sound_Pitch, 0x040188
+.set XSound_Pitch, 0x060188
+
+.set Sound_Control, 0x040189
+.set XSound_Control, 0x060189
+
+.set Sound_AttachNamedVoice, 0x04018a
+.set XSound_AttachNamedVoice, 0x06018a
+
+.set Sound_ReadControlBlock, 0x04018b
+.set XSound_ReadControlBlock, 0x06018b
+
+.set Sound_WriteControlBlock, 0x04018c
+.set XSound_WriteControlBlock, 0x06018c
+
+.set Sound_QInit, 0x0401c0
+.set XSound_QInit, 0x0601c0
+
+.set Sound_QSchedule, 0x0401c1
+.set XSound_QSchedule, 0x0601c1
+
+.set Sound_QRemove, 0x0401c2
+.set XSound_QRemove, 0x0601c2
+
+.set Sound_QFree, 0x0401c3
+.set XSound_QFree, 0x0601c3
+
+.set Sound_QSDispatch, 0x0401c4
+.set XSound_QSDispatch, 0x0601c4
+
+.set Sound_QTempo, 0x0401c5
+.set XSound_QTempo, 0x0601c5
+
+.set Sound_QBeat, 0x0401c6
+.set XSound_QBeat, 0x0601c6
+
+.set Sound_QInterface, 0x0401c7
+.set XSound_QInterface, 0x0601c7
+
+.set Sound_QSchedule32, 0x0401c8
+.set XSound_QSchedule32, 0x0601c8
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Squash
+.set Squash_Compress, 0x042700
+.set XSquash_Compress, 0x062700
+
+.set Squash_Decompress, 0x042701
+.set XSquash_Decompress, 0x062701
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Super
+.set Super_Sample90, 0x040d80
+.set XSuper_Sample90, 0x060d80
+
+.set Super_Sample45, 0x040d81
+.set XSuper_Sample45, 0x060d81
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Switcher
+.set TaskManager_TaskNameFromHandle, 0x042680
+.set XTaskManager_TaskNameFromHandle, 0x062680
+
+.set TaskManager_EnumerateTasks, 0x042681
+.set XTaskManager_EnumerateTasks, 0x062681
+
+.set TaskManager_Shutdown, 0x042682
+.set XTaskManager_Shutdown, 0x062682
+
+.set TaskManager_StartTask, 0x042683
+.set XTaskManager_StartTask, 0x062683
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/TaskWindow
+.set TaskWindow_TaskInfo, 0x043380
+.set XTaskWindow_TaskInfo, 0x063380
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Territory
+.set Territory_Number, 0x043040
+.set XTerritory_Number, 0x063040
+
+.set Territory_Register, 0x043041
+.set XTerritory_Register, 0x063041
+
+.set Territory_Deregister, 0x043042
+.set XTerritory_Deregister, 0x063042
+
+.set Territory_NumberToName, 0x043043
+.set XTerritory_NumberToName, 0x063043
+
+.set Territory_Exists, 0x043044
+.set XTerritory_Exists, 0x063044
+
+.set Territory_AlphabetNumberToName, 0x043045
+.set XTerritory_AlphabetNumberToName, 0x063045
+
+.set Territory_SelectAlphabet, 0x043046
+.set XTerritory_SelectAlphabet, 0x063046
+
+.set Territory_SetTime, 0x043047
+.set XTerritory_SetTime, 0x063047
+
+.set Territory_ReadCurrentTimeZone, 0x043048
+.set XTerritory_ReadCurrentTimeZone, 0x063048
+
+.set Territory_ConvertTimeToUTCOrdinals, 0x043049
+.set XTerritory_ConvertTimeToUTCOrdinals, 0x063049
+
+.set Territory_ReadTimeZones, 0x04304a
+.set XTerritory_ReadTimeZones, 0x06304a
+
+.set Territory_ConvertDateAndTime, 0x04304b
+.set XTerritory_ConvertDateAndTime, 0x06304b
+
+.set Territory_ConvertStandardDateAndTime, 0x04304c
+.set XTerritory_ConvertStandardDateAndTime, 0x06304c
+
+.set Territory_ConvertStandardDate, 0x04304d
+.set XTerritory_ConvertStandardDate, 0x06304d
+
+.set Territory_ConvertStandardTime, 0x04304e
+.set XTerritory_ConvertStandardTime, 0x06304e
+
+.set Territory_ConvertTimeToOrdinals, 0x04304f
+.set XTerritory_ConvertTimeToOrdinals, 0x06304f
+
+.set Territory_ConvertTimeStringToOrdinals, 0x043050
+.set XTerritory_ConvertTimeStringToOrdinals, 0x063050
+
+.set Territory_ConvertOrdinalsToTime, 0x043051
+.set XTerritory_ConvertOrdinalsToTime, 0x063051
+
+.set Territory_Alphabet, 0x043052
+.set XTerritory_Alphabet, 0x063052
+
+.set Territory_AlphabetIdentifier, 0x043053
+.set XTerritory_AlphabetIdentifier, 0x063053
+
+.set Territory_SelectKeyboardHandler, 0x043054
+.set XTerritory_SelectKeyboardHandler, 0x063054
+
+.set Territory_WriteDirection, 0x043055
+.set XTerritory_WriteDirection, 0x063055
+
+.set Territory_CharacterPropertyTable, 0x043056
+.set XTerritory_CharacterPropertyTable, 0x063056
+
+.set Territory_LowerCaseTable, 0x043057
+.set XTerritory_LowerCaseTable, 0x063057
+
+.set Territory_UpperCaseTable, 0x043058
+.set XTerritory_UpperCaseTable, 0x063058
+
+.set Territory_ControlTable, 0x043059
+.set XTerritory_ControlTable, 0x063059
+
+.set Territory_PlainTable, 0x04305a
+.set XTerritory_PlainTable, 0x06305a
+
+.set Territory_ValueTable, 0x04305b
+.set XTerritory_ValueTable, 0x06305b
+
+.set Territory_RepresentationTable, 0x04305c
+.set XTerritory_RepresentationTable, 0x06305c
+
+.set Territory_Collate, 0x04305d
+.set XTerritory_Collate, 0x06305d
+
+.set Territory_ReadSymbols, 0x04305e
+.set XTerritory_ReadSymbols, 0x06305e
+
+.set Territory_ReadCalendarInformation, 0x04305f
+.set XTerritory_ReadCalendarInformation, 0x06305f
+
+.set Territory_NameToNumber, 0x043060
+.set XTerritory_NameToNumber, 0x063060
+
+.set Territory_TransformString, 0x043061
+.set XTerritory_TransformString, 0x063061
+
+.set Territory_ConvertTextToString, 0x043075
+.set XTerritory_ConvertTextToString, 0x063075
+
+
+// Generated from /Users/charles/projects/RO/riscos/Export/Hdr/Interface/Wimp
+.set Wimp_Initialise, 0x0400c0
+.set XWimp_Initialise, 0x0600c0
+
+.set Wimp_CreateWindow, 0x0400c1
+.set XWimp_CreateWindow, 0x0600c1
+
+.set Wimp_CreateIcon, 0x0400c2
+.set XWimp_CreateIcon, 0x0600c2
+
+.set Wimp_DeleteWindow, 0x0400c3
+.set XWimp_DeleteWindow, 0x0600c3
+
+.set Wimp_DeleteIcon, 0x0400c4
+.set XWimp_DeleteIcon, 0x0600c4
+
+.set Wimp_OpenWindow, 0x0400c5
+.set XWimp_OpenWindow, 0x0600c5
+
+.set Wimp_CloseWindow, 0x0400c6
+.set XWimp_CloseWindow, 0x0600c6
+
+.set Wimp_Poll, 0x0400c7
+.set XWimp_Poll, 0x0600c7
+
+.set Wimp_RedrawWindow, 0x0400c8
+.set XWimp_RedrawWindow, 0x0600c8
+
+.set Wimp_UpdateWindow, 0x0400c9
+.set XWimp_UpdateWindow, 0x0600c9
+
+.set Wimp_GetRectangle, 0x0400ca
+.set XWimp_GetRectangle, 0x0600ca
+
+.set Wimp_GetWindowState, 0x0400cb
+.set XWimp_GetWindowState, 0x0600cb
+
+.set Wimp_GetWindowInfo, 0x0400cc
+.set XWimp_GetWindowInfo, 0x0600cc
+
+.set Wimp_SetIconState, 0x0400cd
+.set XWimp_SetIconState, 0x0600cd
+
+.set Wimp_GetIconState, 0x0400ce
+.set XWimp_GetIconState, 0x0600ce
+
+.set Wimp_GetPointerInfo, 0x0400cf
+.set XWimp_GetPointerInfo, 0x0600cf
+
+.set Wimp_DragBox, 0x0400d0
+.set XWimp_DragBox, 0x0600d0
+
+.set Wimp_ForceRedraw, 0x0400d1
+.set XWimp_ForceRedraw, 0x0600d1
+
+.set Wimp_SetCaretPosition, 0x0400d2
+.set XWimp_SetCaretPosition, 0x0600d2
+
+.set Wimp_GetCaretPosition, 0x0400d3
+.set XWimp_GetCaretPosition, 0x0600d3
+
+.set Wimp_CreateMenu, 0x0400d4
+.set XWimp_CreateMenu, 0x0600d4
+
+.set Wimp_DecodeMenu, 0x0400d5
+.set XWimp_DecodeMenu, 0x0600d5
+
+.set Wimp_WhichIcon, 0x0400d6
+.set XWimp_WhichIcon, 0x0600d6
+
+.set Wimp_SetExtent, 0x0400d7
+.set XWimp_SetExtent, 0x0600d7
+
+.set Wimp_SetPointerShape, 0x0400d8
+.set XWimp_SetPointerShape, 0x0600d8
+
+.set Wimp_OpenTemplate, 0x0400d9
+.set XWimp_OpenTemplate, 0x0600d9
+
+.set Wimp_CloseTemplate, 0x0400da
+.set XWimp_CloseTemplate, 0x0600da
+
+.set Wimp_LoadTemplate, 0x0400db
+.set XWimp_LoadTemplate, 0x0600db
+
+.set Wimp_ProcessKey, 0x0400dc
+.set XWimp_ProcessKey, 0x0600dc
+
+.set Wimp_CloseDown, 0x0400dd
+.set XWimp_CloseDown, 0x0600dd
+
+.set Wimp_StartTask, 0x0400de
+.set XWimp_StartTask, 0x0600de
+
+.set Wimp_ReportError, 0x0400df
+.set XWimp_ReportError, 0x0600df
+
+.set Wimp_GetWindowOutline, 0x0400e0
+.set XWimp_GetWindowOutline, 0x0600e0
+
+.set Wimp_PollIdle, 0x0400e1
+.set XWimp_PollIdle, 0x0600e1
+
+.set Wimp_PlotIcon, 0x0400e2
+.set XWimp_PlotIcon, 0x0600e2
+
+.set Wimp_SetMode, 0x0400e3
+.set XWimp_SetMode, 0x0600e3
+
+.set Wimp_SetPalette, 0x0400e4
+.set XWimp_SetPalette, 0x0600e4
+
+.set Wimp_ReadPalette, 0x0400e5
+.set XWimp_ReadPalette, 0x0600e5
+
+.set Wimp_SetColour, 0x0400e6
+.set XWimp_SetColour, 0x0600e6
+
+.set Wimp_SendMessage, 0x0400e7
+.set XWimp_SendMessage, 0x0600e7
+
+.set Wimp_CreateSubMenu, 0x0400e8
+.set XWimp_CreateSubMenu, 0x0600e8
+
+.set Wimp_SpriteOp, 0x0400e9
+.set XWimp_SpriteOp, 0x0600e9
+
+.set Wimp_BaseOfSprites, 0x0400ea
+.set XWimp_BaseOfSprites, 0x0600ea
+
+.set Wimp_BlockCopy, 0x0400eb
+.set XWimp_BlockCopy, 0x0600eb
+
+.set Wimp_SlotSize, 0x0400ec
+.set XWimp_SlotSize, 0x0600ec
+
+.set Wimp_ReadPixTrans, 0x0400ed
+.set XWimp_ReadPixTrans, 0x0600ed
+
+.set Wimp_ClaimFreeMemory, 0x0400ee
+.set XWimp_ClaimFreeMemory, 0x0600ee
+
+.set Wimp_CommandWindow, 0x0400ef
+.set XWimp_CommandWindow, 0x0600ef
+
+.set Wimp_TextColour, 0x0400f0
+.set XWimp_TextColour, 0x0600f0
+
+.set Wimp_TransferBlock, 0x0400f1
+.set XWimp_TransferBlock, 0x0600f1
+
+.set Wimp_ReadSysInfo, 0x0400f2
+.set XWimp_ReadSysInfo, 0x0600f2
+
+.set Wimp_SetFontColours, 0x0400f3
+.set XWimp_SetFontColours, 0x0600f3
+
+.set Wimp_GetMenuState, 0x0400f4
+.set XWimp_GetMenuState, 0x0600f4
+
+.set Wimp_RegisterFilter, 0x0400f5
+.set XWimp_RegisterFilter, 0x0600f5
+
+.set Wimp_AddMessages, 0x0400f6
+.set XWimp_AddMessages, 0x0600f6
+
+.set Wimp_RemoveMessages, 0x0400f7
+.set XWimp_RemoveMessages, 0x0600f7
+
+.set Wimp_SetColourMapping, 0x0400f8
+.set XWimp_SetColourMapping, 0x0600f8
+
+.set Wimp_TextOp, 0x0400f9
+.set XWimp_TextOp, 0x0600f9
+
+.set Wimp_SetWatchdogState, 0x0400fa
+.set XWimp_SetWatchdogState, 0x0600fa
+
+.set Wimp_Extend, 0x0400fb
+.set XWimp_Extend, 0x0600fb
+
+.set Wimp_ResizeIcon, 0x0400fc
+.set XWimp_ResizeIcon, 0x0600fc
+
+.set Wimp_AutoScroll, 0x0400fd
+.set XWimp_AutoScroll, 0x0600fd
+
+
+// ***** Extras that aren't defined in the normal SWIs exports *****
+
+// Internet module
+.set Socket_Creat, 0x041200
+.set XSocket_Creat, 0x061200
+
+.set Socket_Bind, 0x041201
+.set XSocket_Bind, 0x061201
+
+.set Socket_Listen, 0x041202
+.set XSocket_Listen, 0x061202
+
+.set Socket_Accept, 0x041203
+.set XSocket_Accept, 0x061203
+
+.set Socket_Connect, 0x041204
+.set XSocket_Connect, 0x061204
+
+.set Socket_Recv, 0x041205
+.set XSocket_Recv, 0x061205
+
+.set Socket_Recvfrom, 0x041206
+.set XSocket_Recvfrom, 0x061206
+
+.set Socket_Recvmsg, 0x041207
+.set XSocket_Recvmsg, 0x061207
+
+.set Socket_Send, 0x041208
+.set XSocket_Send, 0x061208
+
+.set Socket_Sendto, 0x041209
+.set XSocket_Sendto, 0x061209
+
+.set Socket_Sendmsg, 0x04120a
+.set XSocket_Sendmsg, 0x06120a
+
+.set Socket_Shutdown, 0x04120b
+.set XSocket_Shutdown, 0x06120b
+
+.set Socket_Setsockopt, 0x04120c
+.set XSocket_Setsockopt, 0x06120c
+
+.set Socket_Getsockopt, 0x04120d
+.set XSocket_Getsockopt, 0x06120d
+
+.set Socket_Getpeername, 0x04120e
+.set XSocket_Getpeername, 0x06120e
+
+.set Socket_Getsockname, 0x04120f
+.set XSocket_Getsockname, 0x06120f
+
+.set Socket_Close, 0x041210
+.set XSocket_Close, 0x061210
+
+.set Socket_Select, 0x041211
+.set XSocket_Select, 0x061211
+
+.set Socket_Ioctl, 0x041212
+.set XSocket_Ioctl, 0x061212
+
+.set Socket_Read, 0x041213
+.set XSocket_Read, 0x061213
+
+.set Socket_Write, 0x041214
+.set XSocket_Write, 0x061214
+
+.set Socket_Stat, 0x041215
+.set XSocket_Stat, 0x061215
+
+.set Socket_Readv, 0x041216
+.set XSocket_Readv, 0x061216
+
+.set Socket_Writev, 0x041217
+.set XSocket_Writev, 0x061217
+
+.set Socket_Gettsize, 0x041218
+.set XSocket_Gettsize, 0x061218
+
+.set Socket_Sendtosm, 0x041219
+.set XSocket_Sendtosm, 0x061219
+
+.set Socket_Sysctl, 0x04121a
+.set XSocket_Sysctl, 0x06121a
+
+.set Socket_Accept_1, 0x04121b
+.set XSocket_Accept_1, 0x06121b
+
+.set Socket_Recvfrom_1, 0x04121c
+.set XSocket_Recvfrom_1, 0x06121c
+
+.set Socket_Recvmsg_1, 0x04121d
+.set XSocket_Recvmsg_1, 0x06121d
+
+.set Socket_Sendmsg_1, 0x04121e
+.set XSocket_Sendmsg_1, 0x06121e
+
+.set Socket_Getpeername_1, 0x04121f
+.set XSocket_Getpeername_1, 0x06121f
+
+.set Socket_Getsockname_1, 0x041220
+.set XSocket_Getsockname_1, 0x061220
+
+.set Socket_InternalLookup, 0x041221
+.set XSocket_InternalLookup, 0x061221
+
+.set Socket_Version, 0x041222
+.set XSocket_Version, 0x061222
+
+.set Socket_Filter, 0x041223
+.set XSocket_Filter, 0x061223
+
+
+// EOF
+
+
+        ADR     r0, hello
+        MOV     r1, #0
+        ADR     r2, world
+        SWI     OS_PrettyPrint
+        SWI     OS_NewLine
+        MOV     pc, lr
+hello:
+        .ascii "Hello "
+        .byte 27, 0, 0
+world:
+        .asciz "world"
+
+

@@ -245,6 +245,9 @@ my $mapping_base        = 0;
 my $mapping_register    = undef;
 my %mapping             = ();
 my %constant            = ();
+our %macros;
+our $macroname;
+
 END {
     # If we failing whilst writing a file, delete it.
     if (defined $writing)
@@ -405,6 +408,96 @@ sub include_file {
     close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $filename: $!");
 }
 
+sub expand_macro {
+    my ($macroname, $label, $values) = @_;
+    my @valuelist = ($values =~ m/(?:"[^"]*"[^,]*)+|(?<=^|,)[^,]*/g);
+    our $macros;
+    my $macrodef = $macros{$macroname};
+    my %macrovars;
+    our $context;
+
+    if (!defined $macrodef)
+    {
+        exit_error(128, "$context".
+            ": Internal consistency failre: Macro '$macroname' being expanded which isn't known");
+    }
+
+    if (scalar(@valuelist) > scalar(@{ $macrodef->{'params'} }))
+    {
+        msg_warn(1, "$context".
+            ": Macro '$macroname' supplied with too many arguments (params: '$values')");
+    }
+    #print "Value list: ", (join ', ', @valuelist), " / params: ", join( ', ', @{ $macrodef->{'params'} }), "\n";
+    for my $index (0.. scalar(@{ $macrodef->{'params'} }) -1)
+    {
+        my $varname = $macrodef->{'params'}->[$index];
+        last if (!defined $varname);
+        my $value = $valuelist[$index];
+        if (!defined $value or $value eq '|')
+        {
+            $value = $macrodef->{'defaults'}->[$index];
+        }
+        $macrovars{$varname} = $value;
+        #print "Macro param #$index '$varname' => $value\n";
+    }
+    if (defined $label && $label ne '')
+    {
+        if (!defined $macrodef->{'label'})
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Macro '$macroname' supplied with a label but none supported by the macro");
+        }
+        $macrovars{ $macrodef->{'label'} } = $label;
+    }
+    else
+    {
+        if (defined $macrodef->{'label'})
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Macro '$macroname' requires a label");
+        }
+    }
+
+    our $in_file;
+    our $out_file;
+    our $linenum_input;
+    our $linenum_output;
+    our $f_out;
+    # Remember the caller's context
+    my @caller_context = ($in_file, $linenum_input, $context);
+    # Strip the last output line reference
+    $context =~ s/ -> [^ ]+$// if ($context);
+    my $our_context = '';
+    if ($context)
+    {
+        $our_context = "$context -> ";
+    }
+    $our_context = "${our_context}[Macro $macroname] ";
+
+    $in_file = $macrodef->{'base_file'};
+    $linenum_input = $macrodef->{'base_line'};
+    for my $line (@{ $macrodef->{'lines'} })
+    {
+        $context = "$our_context$in_file:$linenum_input -> $out_file:$linenum_output";
+        $linenum_input++;
+        my $macroline = "$line";
+
+        # Perform the substitutions
+        $macroline =~ s/\Q$_\E/$macrovars{$_}/i foreach (keys %macrovars);
+
+        my $outputline = single_line_conv($macroline);
+        if (defined $outputline)
+        {
+            print $f_out $outputline;
+            my @nlines = ($outputline =~ m/\n/g);
+            $linenum_output += scalar(@nlines);
+        }
+    }
+    print $f_out "\n";  # required by as
+    $linenum_output += 1;
+
+    ($in_file, $linenum_input, $context) = @caller_context;}
+
 
 sub single_line_conv {
     our $in_file;
@@ -412,6 +505,8 @@ sub single_line_conv {
     our $linenum_input;
     our $linenum_output;
     our $context;
+    our $macroname;
+    our %macros;
     my $line = shift;
 
     # empty line
@@ -434,7 +529,83 @@ sub single_line_conv {
         else {
             $line =~ s/(^|\s+);/$1\/\//;
         }
+    }
 
+    # ------ Recording macros ------
+    if ($line =~ /^\s+MACRO/)
+    {
+        # Marker to show we're in a macro
+        $macroname = '1';
+        return undef;
+    }
+    if (defined $macroname)
+    {
+        if ($macroname eq '1')
+        {
+            # This is the first line after the MACRO, which defines what the macro is.
+            if ($line =~ /^(?:(\$[a-zA-Z_]\w*))?\s*(\w*)\s+(.*?)(\/\/.*)?$/) {
+                my ($label, $name, $args, $comment) = ($1, $2, $3, $4);
+                $macroname = $name;
+                my @arglist = split /\s*,\s*/, $args;
+                my @defaultlist;
+                for my $arg (@arglist)
+                {
+                    if ($arg !~ /^\$/)
+                    {
+                        msg_warn(1, "$context".
+                            ": Macro '$name' argument '$arg' does not start with \$'");
+                    }
+                    if ($arg =~ /^(.*?)=(.*)$/)
+                    {
+                        push @defaultlist, $2;
+                        $arg = $1; # Note: Modifies the value in the arglist
+                    }
+                    else
+                    {
+                        push @defaultlist, undef;
+                    }
+                }
+                #print "Defining macro '$macroname'\n";
+                $macros{$macroname} = {
+                        'lines' => [],
+                        'label' => $label,
+                        'params' => \@arglist,
+                        'defaults' => \@defaultlist,
+                        'comment' => $comment,
+                        # Remember the file and line we are in
+                        'base_file' => $in_file,
+                        'base_line' => $linenum_input + 1,  # Start *after* the definition line
+                    };
+            }
+        }
+        else
+        {
+            # We're inside a macro definition
+            if ($line =~ /^([\$\w]+)?\s+MEND(\/\/.*)?$/) {
+                # We're leaving a macro
+                $macroname = undef;
+            }
+            else
+            {
+                push @{ $macros{$macroname}->{'lines'} }, $line;
+            }
+        }
+        return undef;
+    }
+    if ($line =~ /^([A-Z_a-z0-9]*)?(\s+)([^ \t]*)\s*(.*?)(\s*\/\/.*)?$/)
+    {
+        my $label=$1;
+        my $lspcs=$2;
+        my $cmd=$3;
+        my $values=$4;
+        my $comment=$5;
+        if (defined $macros{$cmd})
+        {
+            # Macro expansion requested.
+            #print "Macro expansion '$cmd' of '$label', '$values'\n";
+            expand_macro($cmd, $label, $values);
+            return undef;
+        }
     }
 
     # ------ Conversion: includes ------
@@ -832,7 +1003,7 @@ sub single_line_conv {
         $line =~ s/$var_name/"$var_name, ".$init_val{$var_type}/ei;
         $line = "$indent.global $var_name\n" . $line;
     }
-    elsif ($line =~ m/(\w+)\s*(SET[A|L|S])/i) {
+    elsif ($line =~ m/^(\w+)\s*(SET[A|L|S])/i) {
         my $var_name = $1;
         my $drctv    = $2;
         $line =~ s/$var_name/.set/;
