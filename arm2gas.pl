@@ -1003,7 +1003,7 @@ sub single_line_conv {
         $line =~ s/$var_name/"$var_name, ".$init_val{$var_type}/ei;
         $line = "$indent.global $var_name\n" . $line;
     }
-    elsif ($line =~ m/(\w+)\s*(SET[A|L|S])/i) {
+    elsif ($line =~ m/^(\w+)\s*(SET[A|L|S])/i) {
         my $var_name = $1;
         my $drctv    = $2;
         $line =~ s/$var_name/.set/;
