@@ -100,6 +100,7 @@ our %operators = (
     ":LAND:" => "&&",
     "EQU"    => "="
 );
+our $operators_re = join '|', keys %operators;
 
 # simple replace
 our %misc_op = (
@@ -123,18 +124,23 @@ our %misc_op = (
     "QN"        =>  ".qn",
     "DN"        =>  ".dn",
     "DCB"       =>  ".byte",
-    "DCWU?"     =>  ".hword",
-    "DCDU?"     =>  ".word",
-    "DCQU?"     =>  ".quad",
-    "DCFSU?"    =>  ".single",
-    "DCFDU?"    =>  ".double",
+    "DCW"       =>  ".hword",
+    "DCWU"      =>  ".hword",
+    "DCD"       =>  ".word",
+    "DCDU"      =>  ".word",
+    "DCQ"       =>  ".quad",
+    "DCQU"      =>  ".quad",
+    "DCFS"      =>  ".single",
+    "DCFSU"     =>  ".single",
+    "DCFD"      =>  ".double",
+    "DCFDU"     =>  ".double",
     "SPACE"     =>  ".space",
     "ENTRY"     =>  ""
 );
+our $misc_op_re = join "|", keys %misc_op;
 # simple replace with quoted strings
 our %miscquoted_op = (
     );
-
 
 # variable initial value
 our %init_val = (
@@ -238,6 +244,8 @@ if (!$opt_inline)
         "INCLUDE"   =>  ".include",
     );
 }
+our $miscquoted_op_re = join "|", keys %miscquoted_op;
+
 
 
 # Variable definitions
@@ -872,13 +880,16 @@ sub single_line_conv {
     }
 
     # ------ Conversion: conditional directives ------
-    $line =~ s/^\s+IF\s*:DEF:/.ifdef /i;
-    $line =~ s/^\s+IF\s*:LNOT:\s*:DEF:/.ifndef /i;
-    $line =~ s/^\s+IF\b/.if/i;
-    $line =~ s/^\s+(ELSE\b|ELSEIF|ENDIF)/'.'.lc($1)/ei;
+    if ($line =~ /IF|ELSE/)
+    {
+        $line =~ s/^\s+IF\s*:DEF:/.ifdef /i;
+        $line =~ s/^\s+IF\s*:LNOT:\s*:DEF:/.ifndef /i;
+        $line =~ s/^\s+IF\b/.if/i;
+        $line =~ s/^\s+(ELSE\b|ELSEIF|ENDIF)/'.'.lc($1)/ei;
+    }
 
     # ------ Conversion: operators ------
-    $line =~ s/$_/$operators{$_}/i foreach (keys %operators);
+    $line =~ s/($operators_re)/$operators{$1}/ig;
     if ($line =~ m/(:[A-Z]+:)/i) {
         msg_warn(1, "$context".
             ": Unsupported operator $1".
@@ -977,8 +988,11 @@ sub single_line_conv {
         $line = join "", map { "$prefix$_\n" } @lines;
     }
 
-    $line =~ s/\b$_\b/$misc_op{$_}/ foreach (keys %misc_op);
-    $line =~ s/\b$_(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$_}$1"$2"/ foreach (keys %miscquoted_op);
+    $line =~ s/(\b(?:$misc_op_re)\b)/$misc_op{$1}/eg;
+    if ($line =~ /\b$miscquoted_op_re\b/)
+    {
+        $line =~ s/\b$_(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$_}$1"$2"/ foreach (keys %miscquoted_op);
+    }
 
     # ------ Conversion: labels on instructions ------
     if ($line =~ m/^([a-zA-Z_][a-zA-Z_0-9]*)(\s+)([A-Z])/) {
@@ -1096,9 +1110,9 @@ sub evaluate
 
     $expr = expand_literals($expr);
 
-    $expr =~ s/$_/$operators{$_}/i foreach (keys %operators);
-    $expr =~ s/$_/$mapping{$_}->[0]/i foreach (keys %mapping);
-    $expr =~ s/$_/$constant{$_}/i foreach (keys %constant);
+    $expr =~ s/($operators_re)/$operators{$1}/ig;
+    $expr =~ s/\b([A-Za-z_][A-Za-z0-9_]*)\b/defined $mapping{$1} ? $mapping{$1}->[0] : $1/ge;
+    $expr =~ s/\b([A-Za-z_][A-Za-z0-9_]*)\b/defined $constant{$1} ? $constant{$1} : $1/ge;
 
     my $value = eval $expr;
     if ($@)
@@ -1121,10 +1135,23 @@ sub evaluate
 sub gas_number
 {
     my ($expr) = @_;
-    my $value = evaluate($expr);
-    my $sign = '';
+    my $value;
 
-    $sign = '-' if ($value < 0);
+    my $sign = '';
+    if ($expr =~ /[^0-9]/)
+    {
+        $value = evaluate($expr);
+    }
+    else
+    {
+        $value = 0 + $expr;
+    }
+
+    if ($value < 0)
+    {
+        $sign = '-';
+        $value = -$value;
+    }
     if ($value >= 0 && $value < 1024)
     {
         return "$sign$value";
