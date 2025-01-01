@@ -84,3 +84,6 @@ Text:Matches: expect/$ARG1
 
 Test: GET a header relative to source
 Args: includes/get_file
+
+Test: Real world example of GET
+Args: includes/hello_world_pp
