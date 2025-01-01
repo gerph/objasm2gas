@@ -1931,6 +1931,7 @@ sub write_junitxml
                     if ($output)
                     {
                         # Escape any ]]> that might confuse the CDATA
+                        $output =~ s/\e/\\e/g;
                         $output =~ s/]]>/]]]]><!\[CDATA\[>/g;
                         print FH "<![CDATA[${output}]]>\n";
                     }
