@@ -483,7 +483,10 @@ sub expand_macro {
         my $macroline = "$line";
 
         # Perform the substitutions
-        $macroline =~ s/\Q$_\E/$macrovars{$_}/i foreach (keys %macrovars);
+        if ($macroline =~ /\$/)
+        {
+            $macroline =~ s/\Q$_\E/$macrovars{$_}/i foreach (keys %macrovars);
+        }
 
         my $outputline = single_line_conv($macroline);
         if (defined $outputline)
@@ -496,7 +499,8 @@ sub expand_macro {
     print $f_out "\n";  # required by as
     $linenum_output += 1;
 
-    ($in_file, $linenum_input, $context) = @caller_context;}
+    ($in_file, $linenum_input, $context) = @caller_context;
+}
 
 
 sub single_line_conv {
@@ -868,10 +872,10 @@ sub single_line_conv {
     }
 
     # ------ Conversion: conditional directives ------
-    $line =~ s/IF\s*:DEF:/.ifdef /i;
-    $line =~ s/IF\s*:LNOT:\s*:DEF:/.ifndef /i;
-    $line =~ s/\bIF\b/.if/i;
-    $line =~ s/(ELSE\b|ELSEIF|ENDIF)/'.'.lc($1)/ei;
+    $line =~ s/^\s+IF\s*:DEF:/.ifdef /i;
+    $line =~ s/^\s+IF\s*:LNOT:\s*:DEF:/.ifndef /i;
+    $line =~ s/^\s+IF\b/.if/i;
+    $line =~ s/^\s+(ELSE\b|ELSEIF|ENDIF)/'.'.lc($1)/ei;
 
     # ------ Conversion: operators ------
     $line =~ s/$_/$operators{$_}/i foreach (keys %operators);
@@ -986,7 +990,7 @@ sub single_line_conv {
     }
 
     # ------ Conversion: symbol definition ------
-    if ($line =~ m/LCL([A|L|S])\s+(\w+)/i) {
+    if ($line =~ m/^\s+LCL([A|L|S])\s+(\w+)/i) {
         my $var_type = $1;
         my $var_name = $2;
         msg_warn(1, "$context".
