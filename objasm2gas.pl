@@ -12,7 +12,7 @@ no warnings qw(portable);
 use Getopt::Long;
 
 my $toolname = 'objasm2gas';
-my $ver = '1.0';
+my $ver = '1.1';
 my $helpmsg = <<"USAGE";
 $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
@@ -40,7 +40,7 @@ Cautions:
     otherwise, the conversion result is UNEXPECTED.
 
 Issues and Bugs:
-    https://github.com/gerph/arm2gas
+    https://github.com/gerph/objasm2gas
     mailto:gerph\@gerph.org
     (original version: https://github.com/yxnan/arm2gas)
 USAGE

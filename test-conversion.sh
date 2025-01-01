@@ -28,7 +28,7 @@ if [[ "$output" != '' ]] ; then
     expect=${output/gas/expect}
     mkdir -p "$(dirname "$expect")"
 fi
-"${here}"/arm2gas.pl "$@"
+"${here}"/objasm2gas.pl "$@"
 
 if [[ "$output" != '' ]] ; then
     # Check that it assembles

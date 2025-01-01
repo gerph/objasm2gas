@@ -1,16 +1,16 @@
-# arm2gas
+# objasm2gas
 
 <div align="center">
 <p>
-      <a href="https://github.com/typowritter/arm2gas"><img src="https://img.shields.io/badge/arm2gas-v1.0-brightgreen"></a>
-      <a href="https://github.com/typowritter/arm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
+      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.1-brightgreen"></a>
+      <a href="https://github.com/gerph/objasm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
 </p>
 </div>
-Migrate legacy ARM syntax assembly to GNU syntax (GAS)
+Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS)
 
 ## Usage
 
-`arm2gas.pl [options] file1 [file2...]`
+`objasm2gas.pl [<options>] <file1> [<file2>...]`
 
 ### Options
 
@@ -47,6 +47,11 @@ Migrate legacy ARM syntax assembly to GNU syntax (GAS)
 
 [\*] *inline label is not supported yet.*
 
+- [X] `GET` and `INCLUDE` inline
+- [X] RISC OS format filename handling
+- [X] Macro expansion (tentative)
+
+
 ## Demo
 
 Conversion result of `demo.s` (with option `-i -c`)
@@ -56,40 +61,41 @@ Conversion result of `demo.s` (with option `-i -c`)
 Command-line output:
 
 ```bash
-$ ./arm2gas.pl -i -c test.s
-WARN: test.s:6 -> test.s.out:6: Numeric local label with scope '2routA' is not supported in GAS, converting to '2'
-WARN: test.s:7 -> test.s.out:7: Scope of numeric local label is not supported in GAS, removing ROUT directives
-WARN: test.s:8 -> test.s.out:8: Numeric local label with scope '3routB' is not supported in GAS, converting to '3'
-WARN: test.s:12 -> test.s.out:12: Can't specify label's search level 't' in GAS, dropping
-WARN: test.s:13 -> test.s.out:13: Can't specify label's search level 'a' in GAS, dropping
-WARN: test.s:14 -> test.s.out:14: Can't specify label's search level 't' in GAS, dropping
-WARN: test.s:14 -> test.s.out:14: Can't specify label's scope 'routC' in GAS, dropping
-WARN: test.s:23 -> test.s.out:25: Not all AREA attributes are supported, need a manual check
-WARN: test.s:24 -> test.s.out:27: Not all AREA attributes are supported, need a manual check
-WARN: test.s:27 -> test.s.out:30: Implicit shift is not supported in GAS, converting to explicit shift
-WARN: test.s:28 -> test.s.out:32: Implicit shift is not supported in GAS, converting to explicit shift
-INFO: test.s:29 -> test.s.out:34: Converting hexidecimal '&10AF' to '0x10AF'
-INFO: test.s:30 -> test.s.out:35: Converting '2_11001010' to hexidecimal literal '0xCA'
-INFO: test.s:31 -> test.s.out:36: Converting '-2_1101' to hexidecimal literal '-0x0D'
-INFO: test.s:32 -> test.s.out:37: Converting '8_27' to hexidecimal literal '0x17'
-WARN: test.s:46 -> test.s.out:51: Unsupported operator :ROR:, need a manual check
-WARN: test.s:54 -> test.s.out:59: Conversion containing strings needs a manual check
-WARN: test.s:55 -> test.s.out:60: Conversion containing strings needs a manual check
-WARN: test.s:68 -> test.s.out:73: Conversion containing strings needs a manual check
-WARN: test.s:75 -> test.s.out:80: Local variable 'var1' is not supported, using static declaration
-WARN: test.s:76 -> test.s.out:81: Local variable 'var2' is not supported, using static declaration
-WARN: test.s:81 -> test.s.out:88: Conversion containing strings needs a manual check
+$ ./objasm2gas.pl -i -c demo/demo.s
+WARN: demo/demo.s:6 -> demo/demo.s.out:6: Numeric local label with scope '2routA' is not supported in GAS, converting to '2'
+WARN: demo/demo.s:7 -> demo/demo.s.out:7: Scope of numeric local label is not supported in GAS, removing ROUT directives
+WARN: demo/demo.s:8 -> demo/demo.s.out:8: Numeric local label with scope '3routB' is not supported in GAS, converting to '3'
+WARN: demo/demo.s:12 -> demo/demo.s.out:12: Can't specify label's search level 't' in GAS, dropping
+WARN: demo/demo.s:13 -> demo/demo.s.out:13: Can't specify label's search level 'a' in GAS, dropping
+WARN: demo/demo.s:14 -> demo/demo.s.out:14: Can't specify label's search level 't' in GAS, dropping
+WARN: demo/demo.s:14 -> demo/demo.s.out:14: Can't specify label's scope 'routC' in GAS, dropping
+Argument "    " isn't numeric in exponentiation (**) at ./objasm2gas.pl line 799, <$f_in> line 23.
+WARN: demo/demo.s:27 -> demo/demo.s.out:30: Implicit shift is not supported in GAS, converting to explicit shift
+WARN: demo/demo.s:28 -> demo/demo.s.out:32: Implicit shift is not supported in GAS, converting to explicit shift
+INFO: demo/demo.s:29 -> demo/demo.s.out:34: Converting hexadecimal '&10AF' to '0x10AF'
+INFO: demo/demo.s:30 -> demo/demo.s.out:35: Converting '2_11001010' to hexadecimal literal '0xCA'
+INFO: demo/demo.s:31 -> demo/demo.s.out:36: Converting '-2_1101' to hexadecimal literal '-0x0D'
+INFO: demo/demo.s:32 -> demo/demo.s.out:37: Converting '8_27' to hexadecimal literal '0x17'
+WARN: demo/demo.s:46 -> demo/demo.s.out:51: Unsupported operator :ROR:, need a manual check
+WARN: demo/demo.s:54 -> demo/demo.s.out:59: Conversion containing strings needs a manual check
+WARN: demo/demo.s:55 -> demo/demo.s.out:60: Conversion containing strings needs a manual check
+WARN: demo/demo.s:68 -> demo/demo.s.out:73: Conversion containing strings needs a manual check
+WARN: demo/demo.s:75 -> demo/demo.s.out:80: Local variable 'var1' is not supported, using static declaration
+WARN: demo/demo.s:76 -> demo/demo.s.out:81: Local variable 'var2' is not supported, using static declaration
+WARN: demo/demo.s:81 -> demo/demo.s.out:90: Conversion containing strings needs a manual check
+
 ```
 
 
 
 ## Cautions
 
-By default (without `--strict`), for those directives that have no equivalent GNU format, `arm2gas` will try best to convert and generate warning information on the specific line. Therefore, a 'warning' does **NOT** necessarily mean no issue, please check the conversion result to ensure it works as expected.
+By default (without `--strict`), for those directives that have no equivalent GNU format, `objasm2gas` will try best to convert and generate warning information on the specific line. Therefore, a 'warning' does **NOT** necessarily mean no issue, please check the conversion result to ensure it works as expected.
 
-Note that `arm2gas` *assumes that the input file is in the **correct** syntax*, otherwise, the conversion result is **UNEXPECTED**
+Note that `objasm2gas` *assumes that the input file is in the **correct** syntax*, otherwise, the conversion result is **UNEXPECTED**
 
 ## TODO
 
-- [ ] Macro
 - [ ] Inline label
+- [ ] Loops
+- [ ] Proper conditionals
