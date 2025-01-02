@@ -77,6 +77,19 @@ Test: Mappings with regbase for values
 Args: definitions/mappings_withreg
 
 
+
+Group: Macros
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: 1 argument
+Args: macros/args_1
+
+Test: 2 arguments
+Args: macros/args_2
+
+
 Group: Including files
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --inline
 Creates: gas/$ARG1.s

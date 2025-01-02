@@ -344,6 +344,7 @@ sub process_file {
 sub resolve_filename {
     my ($filename) = @_;
     our $in_file;
+    #print "Resolving: $filename\n";
     return $filename if (-f $filename);
 
     my $newfilename;
@@ -360,7 +361,7 @@ sub resolve_filename {
 
     # If the base directory is in unix form of the RISC OS extensions, strip it.
     # Ie if the source file was <dirs>/s/<leaf> the base directory is <dirs>
-    if ($basedir =~ /(^|.*\/)($extensions_dir_re)$/)
+    if ($basedir =~ /(^|.*\/)($extensions_dir_re)\/?$/)
     {
         $basedir = $1;
     }
@@ -374,6 +375,8 @@ sub resolve_filename {
 
     # Now let's try applying the filename given as a RISC OS style filename
     my $unixised = $filename;
+    #print "Unixised: $unixised\n";
+    #print "Basedir: $basedir\n";
     # Convert (<dirs>.)?s.<leaf> to <dirs>/s/<leaf>
     if ($unixised =~ /(^|.*\.)($extensions_dir_re)\.([^\.]+)$/)
     {
@@ -417,24 +420,60 @@ sub include_file {
 
 sub expand_macro {
     my ($macroname, $label, $values) = @_;
-    my @valuelist = ($values =~ m/(?:"[^"]*"[^,]*)+|(?<=^|,)[^,]*/g);
     our $macros;
     my $macrodef = $macros{$macroname};
     my %macrovars;
     our $context;
+    my @valuelist;
+    my $valueparse=$values;
+
+    while ($valueparse ne '')
+    {
+        next if ($valueparse =~ s/^\s+//);
+        if ($valueparse =~ s/^((?:"[^"]*"[^,]*)+?)\s*//)
+        {
+            # Quoted string.
+            # FIXME: Strip the quotes?
+            #print "Quoted value '$1'\n";
+            push @valuelist, $1;
+        }
+        elsif ($valueparse =~ s/^([^,\s]+)//)
+        {
+            # Should be either an empty string or a value
+            #print "Simple value '$1'\n";
+            push @valuelist, $1;
+        }
+        else
+        {
+            #print "Empty value\n";
+            push @valuelist, '';
+        }
+        # Remove any training spaces
+        $valueparse =~ s/^\s+//;
+        if ($valueparse =~ s/^,//)
+        {
+            # There is another parameter present.
+        }
+        else
+        {
+            # No more parameters supplied, so we're done.
+            #print "Giving up at: $valueparse\n";
+            last;
+        }
+    }
 
     if (!defined $macrodef)
     {
         exit_error(128, "$context".
-            ": Internal consistency failre: Macro '$macroname' being expanded which isn't known");
+            ": Internal consistency failure: Macro '$macroname' being expanded which isn't known");
     }
 
+    #print "Value list: ", (join ', ', @valuelist), " / params: ", join( ', ', @{ $macrodef->{'params'} }), "\n";
     if (scalar(@valuelist) > scalar(@{ $macrodef->{'params'} }))
     {
         msg_warn(1, "$context".
             ": Macro '$macroname' supplied with too many arguments (params: '$values')");
     }
-    #print "Value list: ", (join ', ', @valuelist), " / params: ", join( ', ', @{ $macrodef->{'params'} }), "\n";
     for my $index (0.. scalar(@{ $macrodef->{'params'} }) -1)
     {
         my $varname = $macrodef->{'params'}->[$index];
@@ -460,8 +499,10 @@ sub expand_macro {
     {
         if (defined $macrodef->{'label'})
         {
-            exit_error($ERR_SYNTAX, "$context".
-                ": Macro '$macroname' requires a label");
+            # If the label isn't given, the result is empty string
+            $macrovars{ $macrodef->{'label'} } = "";
+            #exit_error($ERR_SYNTAX, "$context".
+            #    ": Macro '$macroname' requires a label");
         }
     }
 
@@ -492,7 +533,7 @@ sub expand_macro {
         # Perform the substitutions
         if ($macroline =~ /\$/)
         {
-            $macroline =~ s/\Q$_\E/$macrovars{$_}/i foreach (keys %macrovars);
+            $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)\.?/$macrovars{$1} \/\/ ''/ge;
         }
 
         my $outputline = single_line_conv($macroline);
