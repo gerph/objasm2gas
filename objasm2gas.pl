@@ -98,9 +98,8 @@ our %operators = (
     ":SHR:"  => ">>",
     ":LOR:"  => "||",
     ":LAND:" => "&&",
-    "EQU"    => "="
 );
-our $operators_re = join '|', keys %operators;
+our $operators_re = "(?:" . (join '|', keys %operators) . ")";
 
 # simple replace
 our %misc_op = (
@@ -137,7 +136,7 @@ our %misc_op = (
     "SPACE"     =>  ".space",
     "ENTRY"     =>  ""
 );
-our $misc_op_re = join "|", keys %misc_op;
+our $misc_op_re = "(?:" . (join "|", keys %misc_op) . ")";
 # simple replace with quoted strings
 our %miscquoted_op = (
     );
@@ -244,7 +243,7 @@ if (!$opt_inline)
         "INCLUDE"   =>  ".include",
     );
 }
-our $miscquoted_op_re = join "|", keys %miscquoted_op;
+our $miscquoted_op_re = "(?:" . (join "|", keys %miscquoted_op) . ")";
 
 
 
@@ -796,7 +795,7 @@ sub single_line_conv {
 
         my $indent = $1;
         if (defined($align)) {
-            $line .= "$indent.balign " . (2**$1) . "\n";
+            $line .= "$indent.balign " . (2**$align) . "\n";
         }
     }
 
@@ -872,7 +871,7 @@ sub single_line_conv {
 
 
     # ------ Conversion: constants ------
-    if ($line =~ m/^(\w+)(\s*)\*(\s*)(.*?)(\s*\/\/.*)?$/) {
+    if ($line =~ m/^(\w+)(\s*)(?:\*|EQU)(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
         $constant{$symbol} = evaluate($value);
         $comment //= '';
@@ -882,10 +881,10 @@ sub single_line_conv {
     # ------ Conversion: conditional directives ------
     if ($line =~ /IF|ELSE/)
     {
-        $line =~ s/^\s+IF\s*:DEF:/.ifdef /i;
-        $line =~ s/^\s+IF\s*:LNOT:\s*:DEF:/.ifndef /i;
-        $line =~ s/^\s+IF\b/.if/i;
-        $line =~ s/^\s+(ELSE\b|ELSEIF|ENDIF)/'.'.lc($1)/ei;
+        $line =~ s/^(\s+)IF\s*:DEF:/$1.ifdef /i;
+        $line =~ s/^(\s+)IF\s*:LNOT:\s*:DEF:/$1.ifndef /i;
+        $line =~ s/^(\s+)IF\b/$1.if/i;
+        $line =~ s/^(\s+)(ELSE\b|ELSEIF|ENDIF)/$1 . '.' . lc($2)/ei;
     }
 
     # ------ Conversion: operators ------
@@ -988,19 +987,11 @@ sub single_line_conv {
         $line = join "", map { "$prefix$_\n" } @lines;
     }
 
-    $line =~ s/(\b(?:$misc_op_re)\b)/$misc_op{$1}/eg;
-    if ($line =~ /\b$miscquoted_op_re\b/)
+    $line =~ s/(\b($misc_op_re)\b)/$misc_op{$1}/eg;
+    if (scalar(%miscquoted_op) and $line =~ /\b$miscquoted_op_re\s/)
     {
-        $line =~ s/\b$_(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$_}$1"$2"/ foreach (keys %miscquoted_op);
-    }
-
-    # ------ Conversion: labels on instructions ------
-    if ($line =~ m/^([a-zA-Z_][a-zA-Z_0-9]*)(\s+)([A-Z])/) {
-        my $label = $1;
-        my $spaces = $2;
-        my $inst1 = $3;
-        my $prefix = (' ' x length($label)) . $spaces;
-        $line =~ s/$label$spaces$inst1/$label:\n$prefix$inst1/;
+        $line =~ s/\b($miscquoted_op_re)(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$1}$2"$3"/;
+        $line =~ s/\b($miscquoted_op_re)(\s+)("[a-zA-Z_0-9\.\-\/]+")/$miscquoted_op{$1}$2$3/;
     }
 
     # ------ Conversion: symbol definition ------
@@ -1026,6 +1017,15 @@ sub single_line_conv {
         my $drctv    = $2;
         $line =~ s/$var_name/.set/;
         $line =~ s/$drctv/$var_name,/;
+    }
+
+    # ------ Conversion: labels on instructions ------
+    if ($line =~ m/^([a-zA-Z_][a-zA-Z_0-9]*)(\s+)([A-Z])/) {
+        my $label = $1;
+        my $spaces = $2;
+        my $inst1 = $3;
+        my $prefix = (' ' x length($label)) . $spaces;
+        $line =~ s/$label$spaces$inst1/$label:\n$prefix$inst1/;
     }
 
     # postprocess
