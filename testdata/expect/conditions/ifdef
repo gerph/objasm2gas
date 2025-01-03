@@ -1,0 +1,28 @@
+// Ifdef conversion in conditionals
+
+    .ifdef setting
+        .asciz "True"
+    .else
+        .asciz "False"
+    .endif
+
+    .ifndef setting
+        .asciz "True"
+    .else
+        .asciz "False"
+    .endif
+
+    .ifdef setting
+        .asciz "True"
+    .else
+        .asciz "False"
+    .endif
+
+    .ifndef setting
+        .asciz "True"
+    .else
+        .asciz "False"
+    .endif
+
+    .end
+

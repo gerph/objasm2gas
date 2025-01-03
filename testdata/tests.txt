@@ -78,6 +78,18 @@ Args: definitions/mappings_withreg
 
 
 
+Group: Conditionals
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Simple
+Args: conditions/simple
+
+Test: ifdef/ifndef
+Args: conditions/ifdef
+
+
 Group: Macros
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 Creates: gas/$ARG1.s

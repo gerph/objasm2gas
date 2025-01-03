@@ -572,17 +572,6 @@ sub single_line_conv {
             ": Conversion containing strings needs a manual check");
     }
 
-    # ------ Conversion: comments ------
-    # if has comments
-    if ($line =~ m/(^|\s+);/) {
-        if ($opt_nocomment) {
-            $line =~ s/(^|\s+);.*$//;
-        }
-        else {
-            $line =~ s/(^|\s+);/$1\/\//;
-        }
-    }
-
     # ------ Recording macros ------
     if ($line =~ /^\s+MACRO/)
     {
@@ -644,13 +633,42 @@ sub single_line_conv {
         }
         return undef;
     }
-    if ($line =~ /^([A-Z_a-z0-9]*)?(\s+)([^ \t]*)\s*(.*?)(\s*\/\/.*)?$/)
+
+    # ------ Conversion: comments ------
+    # if has comments
+    if ($line =~ m/(^|\s+);/) {
+        if ($opt_nocomment) {
+            $line =~ s/(^|\s+);.*$//;
+        }
+        else {
+            $line =~ s/(^|\s+);/$1\/\//;
+        }
+        if ($line =~ /^\s*\/\//)
+        {
+            # If the line is ONLY comments, we're done
+            return $line;
+        }
+    }
+
+    # Try to decode the line into its components.
+    my $label;
+    my $lspcs;
+    my $cmd;
+    my $cspcs;
+    my $values;
+    my $vspcs;
+    my $comment;
+
+    # FIXME: This parse doesn't handle strings with // in.
+    if ($line =~ /^((?:[A-Z_a-z][A-Z_a-z0-9]*)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/)
     {
-        my $label=$1;
-        my $lspcs=$2;
-        my $cmd=$3;
-        my $values=$4;
-        my $comment=$5;
+        $label=$1;
+        $lspcs=$2;
+        $cmd=$3;
+        $cspcs=$4;
+        $values=$5;
+        $vspcs=$6;
+        $comment=$7 // '';
         if (defined $macros{$cmd})
         {
             # Macro expansion requested.
@@ -659,6 +677,54 @@ sub single_line_conv {
             return undef;
         }
     }
+    else
+    {
+        msg_warn(1, $context.
+            ": Unrecognised line format '$line'");
+        return undef;
+    }
+
+    # ------ Conversion: conditional directives ------
+    if ($cmd eq 'IF' || $cmd eq '[')
+    {
+        if ($values =~ /^\s*:NOT:\s*:DEF:\s*(.*)/)
+        {
+            $cmd = '.ifndef';
+            $values = $1;
+        }
+        elsif ($values =~ /^\s*:DEF:\s*(.*)/)
+        {
+            $cmd = '.ifdef';
+            $values = $1;
+        }
+        else
+        {
+            $cmd = '.if';
+        }
+        goto reconstruct;
+    }
+    elsif ($cmd eq 'ELSE' || $cmd eq '|')
+    {
+        $cmd = '.else';
+        goto reconstruct
+    }
+    elsif ($cmd eq 'ELSEIF')
+    {
+        exit_error($ERR_SYNTAX, $context.
+            ": Conditional ELSEIF not supported");
+    }
+    elsif ($cmd eq 'ENDIF' || $cmd eq ']')
+    {
+        $cmd = '.endif';
+        goto reconstruct
+    }
+    #if ($line =~ /IF|ELSE/)
+    #{
+    #    $line =~ s/^(\s+)IF\s*:DEF:/$1.ifdef /i;
+    #    $line =~ s/^(\s+)IF\s*:LNOT:\s*:DEF:/$1.ifndef /i;
+    #    $line =~ s/^(\s+)IF\b/$1.if/i;
+    #    $line =~ s/^(\s+)(ELSE\b|ELSEIF|ENDIF)/$1 . '.' . lc($2)/ei;
+    #}
 
     # ------ Conversion: includes ------
     if ($opt_inline && $line =~ m/\s+(GET|INCLUDE)\s+([_a-zA-Z0-9\/\.]*)\s*(\/\/.*)?$/) {
@@ -919,15 +985,6 @@ sub single_line_conv {
         $line = ".set $symbol, " . gas_number($value) . "$comment\n";
     }
 
-    # ------ Conversion: conditional directives ------
-    if ($line =~ /IF|ELSE/)
-    {
-        $line =~ s/^(\s+)IF\s*:DEF:/$1.ifdef /i;
-        $line =~ s/^(\s+)IF\s*:LNOT:\s*:DEF:/$1.ifndef /i;
-        $line =~ s/^(\s+)IF\b/$1.if/i;
-        $line =~ s/^(\s+)(ELSE\b|ELSEIF|ENDIF)/$1 . '.' . lc($2)/ei;
-    }
-
     # ------ Conversion: operators ------
     $line =~ s/($operators_re)/$operators{$1}/ig;
     if ($line =~ m/(:[A-Z]+:)/i) {
@@ -1073,6 +1130,16 @@ sub single_line_conv {
     if ($line =~ m/^\s*$/) {
         # delete empty line
         return undef;
+    }
+    return $line;
+
+
+reconstruct:
+    # Reconstruct the line from the components
+    $line = "$label$lspcs$cmd$cspcs$values$vspcs$comment";
+    if ($line !~ /\n/)
+    {
+        $line .= "\n";
     }
     return $line;
 }
