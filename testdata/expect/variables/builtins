@@ -1,0 +1,21 @@
+// Test some of the builtins
+
+        .section .text, "ax"
+
+// AREA:
+        .asciz ".text"
+
+// Filename
+        .asciz "objasm/variables/builtins.s"
+
+// Line number (twice, to see it change)
+        .asciz "13"
+        .asciz "14"
+
+.set here, 23
+
+// Mapping should be 24
+        .ascii "24"
+
+        .end
+

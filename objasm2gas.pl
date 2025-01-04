@@ -147,6 +147,54 @@ our %init_val = (
     "L" => 'FALSE',     # logical
     "S" => '""'         # string
 );
+# Built in variable values
+# https://developer.arm.com/documentation/100069/0611/Using-armasm/Built-in-variables-and-constants
+our %builtins = (
+    'ARCHITECTURE' => '7',          # Might be a lie.
+    'AREANAME' => 'NONE',           # No current area initially
+    'ARMASM_VERSION' => 600000,     # Absolutely a lie
+    'CODESIZE' => 32,               # alias for CONFIG
+    'CONFIG' => 32,                 # Need to update this from CLI.
+    'COMMANDLINE' => '',            # No point in mapping this?
+    'CPU' => 'Generic ARM',         # We'll just give it a generic name
+                                    # https://developer.arm.com/documentation/100069/0611/armasm-Command-line-Options/--cpu-name?lang=en
+    'ENDIAN' => 'little',           # RISC OS is always little endian
+    'FPU' => 'FPA',                 # Not sure what this should be?
+    'INPUTFILE' => sub {
+            our $in_file;
+            return $in_file // 'none';
+        },
+    'INTER' => 0,                   # Might need updating from CLI?
+    'LINENUM' => sub {
+            our $linenum_input;
+            return $linenum_input;
+        },
+    'LINENUMUP' => 0,               # We could obtain this, but it's harder
+    'LINENUMUPPER' => 0,            # We could obtain this, but it's harder
+    'OPT' => 0,                     # We don't really support option values
+    'PC' => 0,                      # We might be able to derive this
+    'PCSTOREOFFSET' => 4,           # Might be a lie
+    'ROPI' => 0,                    # Might need updating from CLI?
+    'RWPI' => 0,                    # Might need updating from CLI?
+    'VAR' => sub {
+            our $mapping_base;
+            return $mapping_base;
+        },
+
+    # Definitions
+    'TRUE' => 1,
+    'FALSE' => 0,
+
+    # Target options
+    'TARGET_ARCH_AARCH32' => 0,     # Might be a lie
+    'TARGET_ARCH_AARCH64' => 0,     # Might be a lie
+    'TARGET_ARCH_ARM' => 8,         # Might be a lie
+    'TARGET_ARCH_THUMB' => 5,       # Might be a lie
+    # We don't support any of the TARGET_FEATURE_* defines
+    'TARGET_PROFILE_A' => 1,        # RISC OS only uses profile A
+    'TARGET_PROFILE_R' => 0,        # RISC OS only uses profile A
+    'TARGET_PROFILE_M' => 0,        # RISC OS only uses profile A
+);
 
 # Names of all the general purpose registers we can use
 our @regnames = (
@@ -248,7 +296,7 @@ our $miscquoted_op_re = "(?:" . (join "|", keys %miscquoted_op) . ")";
 
 
 # Variable definitions
-my $mapping_base        = 0;
+our $mapping_base       = 0;
 my $mapping_register    = undef;
 my %mapping             = ();
 my %constant            = ();
@@ -700,6 +748,7 @@ sub single_line_conv {
         else
         {
             $cmd = '.if';
+            $values = evaluate($values);
         }
         goto reconstruct;
     }
@@ -897,6 +946,8 @@ sub single_line_conv {
             }
         }
 
+        # Should the AREANAME be the section name, or the literal area they supplied?
+        $builtins{'AREANAME'} = "$sec_name";
 
         $line =~ s/^(\s*)AREA[^\/]+[^\/\s]/$1.section $sec_name, "$flags"$args/i;
 
@@ -925,6 +976,7 @@ sub single_line_conv {
     # ------ Conversion: mappings ------
     if ($line =~ m/^(\s*)\^(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
+        our $mapping_base;
         if ($value =~ m/^(.*), ($regnames_re)/)
         {
             $value = $1;
@@ -939,6 +991,7 @@ sub single_line_conv {
     }
     elsif ($line =~ m/^(\w+)(\s*)\#(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
+        our $mapping_base;
         if (!defined $mapping_base)
         {
             exit_error($ERR_SYNTAX, "$context".
@@ -1027,7 +1080,7 @@ sub single_line_conv {
                 # We're done.
                 last;
             }
-            elsif ($const =~ /^\/\//)
+            if ($const =~ /^\/\//)
             {
                 # We've found a comment, so just append this as a bare line
                 if (@num_accumulator)
@@ -1038,7 +1091,16 @@ sub single_line_conv {
                 push @lines, $const;
                 last;
             }
-            elsif ($const =~ s/^("[^"]*"),\s*0(?=\s|$)//)
+
+            if ($const =~ s/^(\$|\{[^,]+)(?:,|$)//)
+            {
+                # This is a variable or possibly an expression, so expand it
+                my $value = expand_variables($1);
+                $const = $value;
+            }
+
+
+            if ($const =~ s/^("[^"]*"),\s*0(?=\s|$)//)
             {
                 # This is a zero-terminated string, so dump it out raw.
                 if (@num_accumulator)
@@ -1046,7 +1108,8 @@ sub single_line_conv {
                     push @lines, ".byte " . join ", ", @num_accumulator;
                     @num_accumulator = ();
                 }
-                push @lines, ".asciz $1";
+                my $s = expand_variables($1);
+                push @lines, ".asciz $s";
             }
             elsif ($const =~ s/^("[^"]*")//)
             {
@@ -1056,7 +1119,8 @@ sub single_line_conv {
                     push @lines, ".byte " . join ", ", @num_accumulator;
                     @num_accumulator = ();
                 }
-                push @lines, ".ascii $1";
+                my $s = expand_variables($1);
+                push @lines, ".ascii $s";
             }
             elsif ($const =~ s/^((?:0x|&)[0-9a-f]+|[0-9]+)//i)
             {
@@ -1203,6 +1267,21 @@ sub expand_literals
     return $line;
 }
 
+##
+# Expand variables
+#
+# @param[in] $expr:     Expression to evaluate
+#
+# @return:  Expanded expression with variables handled
+sub expand_variables
+{
+    my ($expr) = @_;
+
+    # Unknown builtin will be evaluated as 0.
+    $expr =~ s/\{([A-Za-z_][A-Za-z0-9_]*)\}/defined $builtins{$1} ? (ref($builtins{$1}) eq 'CODE' ? $builtins{$1}->() : $builtins{$1}) : 0/ge;
+    return $expr;
+}
+
 
 ##
 # Evaluate an expression, if we can.
@@ -1219,8 +1298,11 @@ sub evaluate
     $expr = expand_literals($expr);
 
     $expr =~ s/($operators_re)/$operators{$1}/ig;
+
     $expr =~ s/\b([A-Za-z_][A-Za-z0-9_]*)\b/defined $mapping{$1} ? $mapping{$1}->[0] : $1/ge;
     $expr =~ s/\b([A-Za-z_][A-Za-z0-9_]*)\b/defined $constant{$1} ? $constant{$1} : $1/ge;
+
+    $expr = expand_variables($expr);
 
     my $value = eval $expr;
     if ($@)
