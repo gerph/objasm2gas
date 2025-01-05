@@ -725,11 +725,31 @@ sub single_line_conv {
             return undef;
         }
     }
+    elsif ($line =~ /^(\s*)(\/\/.*)$/)
+    {
+        $label = '';
+        $lspcs = $1;
+        $cmd = '';
+        $cspcs = '';
+        $values = '';
+        $vspcs = '';
+        $comment = $2;
+    }
     else
     {
+        chomp $line;
         msg_warn(1, $context.
             ": Unrecognised line format '$line'");
         return undef;
+    }
+
+    # ------ Conversion: space reservation ------
+    if ($cmd eq 'SPACE' || $cmd eq '%')
+    {
+        $cmd = '.space';
+        # FIXME: Doesn't support the <expr>, <fill>, <fillsize> form
+        $values = evaluate($values);
+        goto reconstruct;
     }
 
     # ------ Conversion: conditional directives ------
@@ -767,13 +787,6 @@ sub single_line_conv {
         $cmd = '.endif';
         goto reconstruct
     }
-    #if ($line =~ /IF|ELSE/)
-    #{
-    #    $line =~ s/^(\s+)IF\s*:DEF:/$1.ifdef /i;
-    #    $line =~ s/^(\s+)IF\s*:LNOT:\s*:DEF:/$1.ifndef /i;
-    #    $line =~ s/^(\s+)IF\b/$1.if/i;
-    #    $line =~ s/^(\s+)(ELSE\b|ELSEIF|ENDIF)/$1 . '.' . lc($2)/ei;
-    #}
 
     # ------ Conversion: includes ------
     if ($opt_inline && $line =~ m/\s+(GET|INCLUDE)\s+([_a-zA-Z0-9\/\.]*)\s*(\/\/.*)?$/) {
@@ -1200,6 +1213,11 @@ sub single_line_conv {
 
 reconstruct:
     # Reconstruct the line from the components
+    if ($label ne '' && $label !~ /:$/)
+    {
+        $label = "$label:";
+        $lspcs =~ s/ //; # Remove 1 space from $lspcs if we can.
+    }
     $line = "$label$lspcs$cmd$cspcs$values$vspcs$comment";
     if ($line !~ /\n/)
     {

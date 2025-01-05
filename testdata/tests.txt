@@ -88,6 +88,16 @@ Args: variables/builtins
 
 
 
+Group: Miscellaneous
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Reserve space
+Args: misc/reserve-space
+
+
+
 Group: Conditionals
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 Creates: gas/$ARG1.s

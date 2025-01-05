@@ -1,0 +1,12 @@
+// Reserving space
+
+// Labelled
+label:      .space   25
+label2:     .space       25
+
+// Not labelled
+            .space   25
+            .space       25
+
+            .end
+
