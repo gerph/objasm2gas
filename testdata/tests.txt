@@ -87,6 +87,15 @@ Test: Builtins
 Args: variables/builtins
 
 
+Group: Expressions
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Simple string expressions
+Args: expressions/string
+
+
 
 Group: Miscellaneous
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
@@ -120,6 +129,9 @@ Args: macros/args_1
 
 Test: 2 arguments
 Args: macros/args_2
+
+Test: Real world signature
+Args: macros/signature
 
 
 Group: Including files

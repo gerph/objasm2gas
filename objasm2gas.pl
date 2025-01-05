@@ -217,13 +217,13 @@ my $extensions_dir_re = "s|hdr|c|h|cmhg|s_c|o|aof|bin|x";
 
 # @args: exit_status, line, file, err_msg
 sub exit_error {
-    print "\e[01;31mERROR\e[0m: $_[1]\n";
+    print STDERR "\e[01;31mERROR\e[0m: $_[1]\n";
     exit($_[0]);
 }
 
 sub msg_info {
     if ($opt_verbose) {
-        print "\e[01;34mINFO\e[0m: $_[0]\n";
+        print STDERR "\e[01;34mINFO\e[0m: $_[0]\n";
     }
 }
 
@@ -233,7 +233,7 @@ sub msg_warn {
         exit_error($ERR_UNSUPPORT, $_[1]);
     }
     elsif (! $opt_nowarning) {
-        print "\e[00;33mWARN\e[0m: $_[1]\n";
+        print STDERR "\e[00;33mWARN\e[0m: $_[1]\n";
     }
 }
 
@@ -1053,6 +1053,30 @@ sub single_line_conv {
 
     # ------ Conversion: operators ------
     $line =~ s/($operators_re)/$operators{$1}/ig;
+    # Manual replacement of the string operators where we can.
+    # FIXME: We only support the simplest of operator forms here
+    $line =~ s/:LEN:\s*"([^"]*)"/length($1)/ge;
+    $line =~ s/"([^"]*)"\s*:LEFT:\s*(\d+)/'"' . substr($1, 0, $2) . '"'/ge;
+    $line =~ s/"([^"]*)"\s*:RIGHT:\s*(\d+)/'"' . ($2 ? substr($1, -$2) : ''). '"'/ge;
+    $line =~ s/"([^"]*)"\s*:CC:\s*"([^"]*)"/'"' . $1 . $2 . '"'/ge;
+    $line =~ s/:UPPERCASE:\s*"([^"]*)"/'"' . uc($1) . '"'/ge;
+    $line =~ s/:LOWERCASE:\s*"([^"]*)"/'"' . lc($1) . '"'/ge;
+    $line =~ s/:STR:\s*(\d+)/sprintf "%08x", $1/ge;
+    $line =~ s/:CHR:\s*(\d+)/sprintf "\"%c\"", $1/ge;
+    # FIXME: We don't support:
+    #   ?symbol
+    #   :BASE:
+    #   :INDEX:
+    #   :DEF:
+    #   :LNOT:
+    #   :RCONST:
+    #   :CC_ENCODING:
+    #   :REVERSE_CC:
+    #   :MOD:
+    #   :ROR:
+    #   :ROL:
+    # See: https://developer.arm.com/documentation/dui0801/g/Symbols--Literals--Expressions--and-Operators/Unary-operators?lang=en
+
     if ($line =~ m/(:[A-Z]+:)/i) {
         msg_warn(1, "$context".
             ": Unsupported operator $1".

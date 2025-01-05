@@ -1,0 +1,28 @@
+// Test some string expressions
+
+// left 3 chars of Hello
+        .ascii "Hel"
+
+// right 3 chars of Hello
+        .ascii "llo"
+
+// how long the string 'hello' is
+        .byte 5
+
+// join Hello and World
+        .ascii "HelloWorld"
+
+// convert number 5 to a hex string
+        .byte 00000005
+
+// Convert Hello to upper case
+        .ascii "HELLO"
+
+// Convert Hello to lower case
+        .ascii "hello"
+
+// The character for code 65
+        .ascii "A"
+
+
+
