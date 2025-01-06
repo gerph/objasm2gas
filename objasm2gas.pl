@@ -1186,7 +1186,10 @@ sub single_line_conv {
         $line = join "", map { "$prefix$_\n" } @lines;
     }
 
-    $line =~ s/(\b($misc_op_re)\b)/$misc_op{$1}/eg;
+    if ($line =~ s/(\b($misc_op_re)\b)/$misc_op{$1}/eg)
+    {
+        $line = expand_variables($line);
+    }
     if (scalar(%miscquoted_op) and $line =~ /\b$miscquoted_op_re\s/)
     {
         $line =~ s/\b($miscquoted_op_re)(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$1}$2"$3"/;
@@ -1320,7 +1323,12 @@ sub expand_variables
     my ($expr) = @_;
 
     # Unknown builtin will be evaluated as 0.
-    $expr =~ s/\{([A-Za-z_][A-Za-z0-9_]*)\}/defined $builtins{$1} ? (ref($builtins{$1}) eq 'CODE' ? $builtins{$1}->() : $builtins{$1}) : 0/ge;
+    $expr =~ s/\{([A-Za-z_][A-Za-z0-9_]*)\}/
+               my $val = defined $builtins{$1} ? (ref($builtins{$1}) eq 'CODE' ? $builtins{$1}->() : $builtins{$1}) : 0;
+               if ($val =~ m![^0-9]!)
+               { $val = '"' . $val . '"'; }
+               $val;
+              /ge;
     return $expr;
 }
 
