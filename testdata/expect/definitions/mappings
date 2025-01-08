@@ -12,9 +12,9 @@
 
         .section .text.Example, "ax"
 
-        .word     Constant_0
-        .word     Constant_1
-        .word     Constant_5
+        .word     0
+        .word     1
+        .word     5
 
         LDR     r1, =Constant_1
         LDR     r2, =Large

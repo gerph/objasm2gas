@@ -95,6 +95,15 @@ Text:Matches: expect/$ARG1
 Test: Simple string expressions
 Args: expressions/string
 
+Test: Simple number expressions
+Args: expressions/numbers
+
+Test: Compound expressions
+Args: expressions/compound
+
+Test: Comparison expressions
+Args: expressions/comparison
+
 
 
 Group: Miscellaneous

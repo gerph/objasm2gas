@@ -9,9 +9,9 @@
 
         .section .text.Example, "ax"
 
-        .word     Constant_0
-        .word     Constant_1
-        .word     Constant_5
+        .word     0
+        .word     1
+        .word     5
 
         LDR     r0, [r7, #5]
         LDRNE   r0, [r7, #5]

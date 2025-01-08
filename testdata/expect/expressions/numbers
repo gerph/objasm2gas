@@ -1,0 +1,28 @@
+// Test some string expressions
+
+    .section .text, "ax"
+
+// 2+3
+    .byte 5
+
+// 10-3
+    .byte 7
+
+// 2*3
+    .byte 6
+
+// 10/3
+    .byte 3
+
+// 10%3
+    .byte 1
+
+// 10&3
+    .byte 2
+
+// 10|3
+    .byte 11
+
+        .end
+
+

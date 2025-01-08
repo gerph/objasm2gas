@@ -1,28 +1,48 @@
 // Test some string expressions
 
+    .section .text, "ax"
+
 // left 3 chars of Hello
         .ascii "Hel"
+
+// left 0 chars of Hello
+        .ascii ""
+
+// left -1 chars of Hello
+        .ascii ""
 
 // right 3 chars of Hello
         .ascii "llo"
 
+// right 0 chars of Hello
+        .ascii ""
+
+// right -1 chars of Hello
+        .ascii ""
+
 // how long the string 'hello' is
         .byte 5
+
+// how long the string '' is
+        .byte 0
+
+// bracketted string
 
 // join Hello and World
         .ascii "HelloWorld"
 
 // convert number 5 to a hex string
-        .byte 00000005
+        .ascii "00000005"
 
-// Convert Hello to upper case
+// Convert Hello to upper case (not supported in ObjAsm)
         .ascii "HELLO"
 
-// Convert Hello to lower case
+// Convert Hello to lower case (not supported in ObjAsm)
         .ascii "hello"
 
 // The character for code 65
         .ascii "A"
 
+        .end
 
 

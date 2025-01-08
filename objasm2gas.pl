@@ -91,7 +91,7 @@ our @drctv_nullary = (
 our %operators = (
     ":OR:"   => "|",
     ":EOR:"  => "^",
-    ":AND:"  => "&",
+    ":AND:"  => "& ",
     ":NOT:"  => "~",
     ":MOD:"  => "%",
     ":SHL:"  => "<<",
@@ -122,6 +122,12 @@ our %misc_op = (
     "RN"        =>  ".req",
     "QN"        =>  ".qn",
     "DN"        =>  ".dn",
+    "ENTRY"     =>  ""
+);
+our $misc_op_re = "(?:" . (join "|", keys %misc_op) . ")";
+
+# Directives that take expressions
+our %miscexpression_op = (
     "DCB"       =>  ".byte",
     "DCW"       =>  ".hword",
     "DCWU"      =>  ".hword",
@@ -134,9 +140,9 @@ our %misc_op = (
     "DCFD"      =>  ".double",
     "DCFDU"     =>  ".double",
     "SPACE"     =>  ".space",
-    "ENTRY"     =>  ""
 );
-our $misc_op_re = "(?:" . (join "|", keys %misc_op) . ")";
+our $miscexpression_op_re = "(?:" . (join "|", keys %miscexpression_op) . ")";
+
 # simple replace with quoted strings
 our %miscquoted_op = (
     );
@@ -194,6 +200,15 @@ our %builtins = (
     'TARGET_PROFILE_A' => 1,        # RISC OS only uses profile A
     'TARGET_PROFILE_R' => 0,        # RISC OS only uses profile A
     'TARGET_PROFILE_M' => 0,        # RISC OS only uses profile A
+);
+
+our %cmp_number = (
+    '=' => sub { my ($a, $b) = @_; ($a == $b) ? 1 : 0; },
+    '>' => sub { my ($a, $b) = @_; ($a > $b) ? 1 : 0; },
+    '<' => sub { my ($a, $b) = @_; ($a < $b) ? 1 : 0; },
+    '<=' => sub { my ($a, $b) = @_; ($a <= $b) ? 1 : 0; },
+    '>=' => sub { my ($a, $b) = @_; ($a >= $b) ? 1 : 0; },
+    '<>' => sub { my ($a, $b) = @_; ($a != $b) ? 1 : 0; },
 );
 
 # Names of all the general purpose registers we can use
@@ -615,10 +630,10 @@ sub single_line_conv {
     }
 
     # warn if detect a string
-    if ($line =~ m/"+/) {
-        msg_warn(0, "$context".
-            ": Conversion containing strings needs a manual check");
-    }
+    #if ($line =~ m/"+/) {
+    #    msg_warn(0, "$context".
+    #        ": Conversion containing strings needs a manual check");
+    #}
 
     # ------ Recording macros ------
     if ($line =~ /^\s+MACRO/)
@@ -801,7 +816,7 @@ sub single_line_conv {
     }
 
     # remove special symbol delimiter
-    $line =~ s/\|//;
+    #$line =~ s/\|//;
 
     # ------ Conversion: labels ------
     given ($line) {
@@ -1051,37 +1066,6 @@ sub single_line_conv {
         $line = ".set $symbol, " . gas_number($value) . "$comment\n";
     }
 
-    # ------ Conversion: operators ------
-    $line =~ s/($operators_re)/$operators{$1}/ig;
-    # Manual replacement of the string operators where we can.
-    # FIXME: We only support the simplest of operator forms here
-    $line =~ s/:LEN:\s*"([^"]*)"/length($1)/ge;
-    $line =~ s/"([^"]*)"\s*:LEFT:\s*(\d+)/'"' . substr($1, 0, $2) . '"'/ge;
-    $line =~ s/"([^"]*)"\s*:RIGHT:\s*(\d+)/'"' . ($2 ? substr($1, -$2) : ''). '"'/ge;
-    $line =~ s/"([^"]*)"\s*:CC:\s*"([^"]*)"/'"' . $1 . $2 . '"'/ge;
-    $line =~ s/:UPPERCASE:\s*"([^"]*)"/'"' . uc($1) . '"'/ge;
-    $line =~ s/:LOWERCASE:\s*"([^"]*)"/'"' . lc($1) . '"'/ge;
-    $line =~ s/:STR:\s*(\d+)/sprintf "%08x", $1/ge;
-    $line =~ s/:CHR:\s*(\d+)/sprintf "\"%c\"", $1/ge;
-    # FIXME: We don't support:
-    #   ?symbol
-    #   :BASE:
-    #   :INDEX:
-    #   :DEF:
-    #   :LNOT:
-    #   :RCONST:
-    #   :CC_ENCODING:
-    #   :REVERSE_CC:
-    #   :MOD:
-    #   :ROR:
-    #   :ROL:
-    # See: https://developer.arm.com/documentation/dui0801/g/Symbols--Literals--Expressions--and-Operators/Unary-operators?lang=en
-
-    if ($line =~ m/(:[A-Z]+:)/i) {
-        msg_warn(1, "$context".
-            ": Unsupported operator $1".
-            ", need a manual check");
-    }
 
     # ------ Conversion: misc directives ------
     # weak declaration
@@ -1136,8 +1120,16 @@ sub single_line_conv {
                 $const = $value;
             }
 
+            if ($const =~ s/^((?:[^",]+|[^",]*"[^"]*")+)//)
+            {
+                my $expr = $1;
+                #print "LBS: $expr\n";
+                $expr = evaluate($expr);
+                $const = $expr . $const;
+            }
 
-            if ($const =~ s/^("[^"]*"),\s*0(?=\s|$)//)
+
+            if ($const =~ s/^("[^"]*")\s*,\s*0(?=\s|$)//)
             {
                 # This is a zero-terminated string, so dump it out raw.
                 if (@num_accumulator)
@@ -1186,10 +1178,11 @@ sub single_line_conv {
         $line = join "", map { "$prefix$_\n" } @lines;
     }
 
-    if ($line =~ s/(\b($misc_op_re)\b)/$misc_op{$1}/eg)
+    if ($line =~ s/\b($misc_op_re)\b/$misc_op{$1}/eg)
     {
         $line = expand_variables($line);
     }
+    $line =~ s/(\s+)($miscexpression_op_re)(\s+)(.*?)(\s*(\/\/.*)?)$/$1 . $miscexpression_op{$2} . $3 . gas_number(evaluate($4)) . $5/eg;
     if (scalar(%miscquoted_op) and $line =~ /\b$miscquoted_op_re\s/)
     {
         $line =~ s/\b($miscquoted_op_re)(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$1}$2"$3"/;
@@ -1289,8 +1282,8 @@ sub expand_literals
         if ($line =~ m/(-?)&([\dA-F]+)/i) {
             my $sign    = $1;
             my $hex_lit = $2;
-            msg_info($context.
-                ": Converting hexadecimal '&$hex_lit' to '0x$hex_lit'");
+            #msg_info($context.
+            #    ": Converting hexadecimal '&$hex_lit' to '0x$hex_lit'");
             $line =~ s/${sign}&$hex_lit/${sign}0x$hex_lit/;
         }
         elsif ($line =~ m/(-?)([2|8])_(\d+)/) {
@@ -1344,6 +1337,9 @@ sub evaluate
     my ($expr) = @_;
     my $orig = $expr;
     our $context;
+    our %cmp_number;
+
+    #print "Expression: $expr\n";
 
     $expr = expand_literals($expr);
 
@@ -1354,13 +1350,79 @@ sub evaluate
 
     $expr = expand_variables($expr);
 
-    my $value = eval $expr;
-    if ($@)
+    $expr =~ s/(&|0x)([A-Fa-f0-9]+)/hex($2)/ge;
+
+    # Manual replacement of the string operators where we can.
+    # FIXME: We only support the simplest of operator forms here
+    while ($expr =~ /[:<=>\|&+\-*\/%]/)
     {
-        # Something went wrong in the evaluation; let's just fault this.
-        exit_error($ERR_SYNTAX, "$context".
-            ": Evaluation of variables in '$orig' produced '$expr' which failed: $@");
+        my $before = $expr;
+        #print "Before: $before\n";
+        $expr =~ s/:LEN:\s*"([^"]*)"/length($1)/ge;
+        $expr =~ s/"([^"]*)"\s*:LEFT:\s*(-?\d+)/'"' . ($2 > 0 ? substr($1, 0, $2) : '') . '"'/ge;
+        $expr =~ s/"([^"]*)"\s*:RIGHT:\s*(-?\d+)/'"' . ($2 > 0 ? substr($1, -$2) : ''). '"'/ge;
+        $expr =~ s/"([^"]*)"\s*:CC:\s*"([^"]*)"/'"' . $1 . $2 . '"'/ge;
+        $expr =~ s/:UPPERCASE:\s*"([^"]*)"/'"' . uc($1) . '"'/ge;
+        $expr =~ s/:LOWERCASE:\s*"([^"]*)"/'"' . lc($1) . '"'/ge;
+        $expr =~ s/:STR:\s*(\d+)/sprintf "\"%08x\"", $1/ge;
+        $expr =~ s/:CHR:\s*(\d+)/sprintf "\"%c\"", $1/ge;
+        # FIXME: We don't support:
+        #   ?symbol
+        #   :BASE:
+        #   :INDEX:
+        #   :DEF:
+        #   :LNOT:
+        #   :RCONST:
+        #   :CC_ENCODING:
+        #   :REVERSE_CC:
+        #   :MOD:
+        #   :ROR:
+        #   :ROL:
+        # See: https://developer.arm.com/documentation/dui0801/g/Symbols--Literals--Expressions--and-Operators/Unary-operators?lang=en
+
+        # Simple expressions
+        if ($expr =~ /[+*\/%\-<>\|&~]/)
+        {
+            $expr =~ s/~(-?\d+)/~ (0+$1)/ge;
+            $expr =~ s/(-?\d+)\s*<<\s*(-?\d+)/$1 << $2/ge;
+            $expr =~ s/(-?\d+)\s*>>\s*(-?\d+)/$1 >> $2/ge;
+            $expr =~ s/(-?\d+)\s*\*\s*(-?\d+)/$1 * $2/ge;
+            $expr =~ s/(-?\d+)\s*\/\s*(-?\d+)/$1 \/ $2/ge;
+            $expr =~ s/(-?\d+)\s*\%\s*(-?\d+)/$1 % $2/ge;
+            $expr =~ s/(-?\d+)\s*\+\s*(-?\d+)/$1 + $2/ge;
+            $expr =~ s/(-?\d+)\s*-\s*(-?\d+)/$1 - $2/ge;
+            $expr =~ s/(-?\d+)\s*\|\s*(-?\d+)/(0+$1) | (0+$2)/ge;
+            $expr =~ s/(-?\d+)\s*&\s+(-?\d+)/(0+$1) & (0+$2)/ge;
+        }
+
+        if ($expr =~ /[<>=]/)
+        {
+            $expr =~ s/(-?\d+)\s*(=|>|<|<=|>=|<>)\s*(-?\d+)/$cmp_number{$2}->($1, $3)/ge;
+        }
+
+        # Brackets around a bare number means that it can be handled alone
+        $expr =~ s/\(\s*(-?\d+)\s*\)/$1/g;
+        # And same for brackets around a string
+        $expr =~ s/\(\s*("[^"]*")\s*\)/$1/g;
+        #print "After: $expr\n";
+
+        last if ($before eq $expr);
     }
+
+    if ($expr =~ m/(:[A-Z]+:)/i) {
+        msg_warn(1, "$context".
+            ": Unsupported operator $1".
+            ", need a manual check");
+    }
+
+    my $value = $expr;
+    #my $value = eval $expr;
+    #if ($@)
+    #{
+    #    # Something went wrong in the evaluation; let's just fault this.
+    #    exit_error($ERR_SYNTAX, "$context".
+    #        ": Evaluation of variables in '$orig' produced '$expr' which failed: $@");
+    #}
 
     return $value;
 }
