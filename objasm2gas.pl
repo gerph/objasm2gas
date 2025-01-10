@@ -803,6 +803,107 @@ sub single_line_conv {
         goto reconstruct
     }
 
+    # Byte/String constants
+    if ($cmd eq '=') {
+        # The constants can be things like:
+        # = "hello"
+        # = "hello", "there"
+        # = 1, 2, 3
+        # = "hello", 32, "there"
+        # = "hello", 0
+        # We will decode this as a sequence of regex matched strings
+        my @lines = ();
+        $values =~ s/\s+$//;
+        my @num_accumulator = ();
+        while ($values ne '')
+        {
+            $values =~ s/^\s//;
+            if ($values eq '')
+            {
+                # We're done.
+                last;
+            }
+            if ($values =~ /^\/\//)
+            {
+                # We've found a comment, so just append this as a bare line
+                if (@num_accumulator)
+                {   # Flush the number accumulator
+                    push @lines, ".byte " . join ", ", @num_accumulator;
+                    @num_accumulator = ();
+                }
+                push @lines, $values;
+                last;
+            }
+
+            if ($values =~ s/^(\$|\{[^,]+)(?:,|$)//)
+            {
+                # This is a variable or possibly an expression, so expand it
+                my $value = expand_variables($1);
+                $values = $value;
+            }
+
+            if ($values =~ s/^((?:[^",]+|[^",]*"[^"]*")+)//)
+            {
+                my $expr = $1;
+                #print "LBS: $expr\n";
+                $expr = evaluate($expr);
+                $values = $expr . $values;
+            }
+
+
+            if ($values =~ s/^("[^"]*")\s*,\s*0(?=\s|$)//)
+            {
+                # This is a zero-terminated string, so dump it out raw.
+                if (@num_accumulator)
+                {   # Flush the number accumulator
+                    push @lines, ".byte " . join ", ", @num_accumulator;
+                    @num_accumulator = ();
+                }
+                my $s = expand_variables($1);
+                push @lines, ".asciz $s";
+            }
+            elsif ($values =~ s/^("[^"]*")//)
+            {
+                # This is a string, so dump it out
+                if (@num_accumulator)
+                {   # Flush the number accumulator
+                    push @lines, ".byte " . join ", ", @num_accumulator;
+                    @num_accumulator = ();
+                }
+                my $s = expand_variables($1);
+                push @lines, ".ascii $s";
+            }
+            elsif ($values =~ s/^((?:0x|&)[0-9a-f]+|[0-9]+)//i)
+            {
+                # This is a number, so we want to accumulate it.
+                my $value = $1;
+                $value =~ s/&/0x/;
+                push @num_accumulator, $value;
+            }
+            else
+            {
+                msg_warn(1, "$context".
+                    ": Literal byte sequence cannot interpret '$values'".
+                    ", need a manual check");
+                last;
+            }
+            # Trim any commas between parameters
+            $values =~ s/^(,\s*)+//;
+        }
+
+        if (@num_accumulator)
+        {   # Flush the number accumulator
+            push @lines, ".byte " . join ", ", @num_accumulator;
+            @num_accumulator = ();
+        }
+
+        my $unlabelled = 0;
+        my $sprefix = (' ' x length($label)) . $lspcs;
+        $line = join "", map { $unlabelled++ ? "$sprefix$_\n" : "$label$lspcs$_\n" } @lines;
+        return $line;
+    }
+
+
     # ------ Conversion: includes ------
     if ($opt_inline && $line =~ m/\s+(GET|INCLUDE)\s+([_a-zA-Z0-9\/\.]*)\s*(\/\/.*)?$/) {
         my $file = $2;
@@ -1078,104 +1179,6 @@ sub single_line_conv {
     if ($line =~ m/(INFO\s+\d+\s*,)\s*".*"/i) {
         my $prefix = $1;
         $line =~ s/$prefix/.warning /i;
-    }
-    # Byte/String constants
-    if ($line =~ m/^(\s+)=\s+(.*)/i) {
-        my $prefix = $1;
-        my $const = $2;
-        # The constants can be things like:
-        # = "hello"
-        # = "hello", "there"
-        # = 1, 2, 3
-        # = "hello", 32, "there"
-        # = "hello", 0
-        # We will decode this as a sequence of regex matched strings
-        my @lines = ();
-        $const =~ s/\s+$//;
-        my @num_accumulator = ();
-        while ($const ne '')
-        {
-            $const =~ s/^\s//;
-            if ($const eq '')
-            {
-                # We're done.
-                last;
-            }
-            if ($const =~ /^\/\//)
-            {
-                # We've found a comment, so just append this as a bare line
-                if (@num_accumulator)
-                {   # Flush the number accumulator
-                    push @lines, ".byte " . join ", ", @num_accumulator;
-                    @num_accumulator = ();
-                }
-                push @lines, $const;
-                last;
-            }
-
-            if ($const =~ s/^(\$|\{[^,]+)(?:,|$)//)
-            {
-                # This is a variable or possibly an expression, so expand it
-                my $value = expand_variables($1);
-                $const = $value;
-            }
-
-            if ($const =~ s/^((?:[^",]+|[^",]*"[^"]*")+)//)
-            {
-                my $expr = $1;
-                #print "LBS: $expr\n";
-                $expr = evaluate($expr);
-                $const = $expr . $const;
-            }
-
-
-            if ($const =~ s/^("[^"]*")\s*,\s*0(?=\s|$)//)
-            {
-                # This is a zero-terminated string, so dump it out raw.
-                if (@num_accumulator)
-                {   # Flush the number accumulator
-                    push @lines, ".byte " . join ", ", @num_accumulator;
-                    @num_accumulator = ();
-                }
-                my $s = expand_variables($1);
-                push @lines, ".asciz $s";
-            }
-            elsif ($const =~ s/^("[^"]*")//)
-            {
-                # This is a string, so dump it out
-                if (@num_accumulator)
-                {   # Flush the number accumulator
-                    push @lines, ".byte " . join ", ", @num_accumulator;
-                    @num_accumulator = ();
-                }
-                my $s = expand_variables($1);
-                push @lines, ".ascii $s";
-            }
-            elsif ($const =~ s/^((?:0x|&)[0-9a-f]+|[0-9]+)//i)
-            {
-                # This is a number, so we want to accumulate it.
-                my $value = $1;
-                $value =~ s/&/0x/;
-                push @num_accumulator, $value;
-            }
-            else
-            {
-                msg_warn(1, "$context".
-                    ": Literal byte sequence cannot interpret '$const'".
-                    ", need a manual check");
-                last;
-            }
-            # Trim any commas between parameters
-            $const =~ s/^(,\s*)+//;
-        }
-
-        if (@num_accumulator)
-        {   # Flush the number accumulator
-            push @lines, ".byte " . join ", ", @num_accumulator;
-            @num_accumulator = ();
-        }
-
-        $line = join "", map { "$prefix$_\n" } @lines;
     }
 
     if ($line =~ s/\b($misc_op_re)\b/$misc_op{$1}/eg)
