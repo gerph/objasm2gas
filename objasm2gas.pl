@@ -905,9 +905,8 @@ sub single_line_conv {
 
 
     # ------ Conversion: includes ------
-    if ($opt_inline && $line =~ m/\s+(GET|INCLUDE)\s+([_a-zA-Z0-9\/\.]*)\s*(\/\/.*)?$/) {
-        my $file = $2;
-        my $comment = $3 // '';
+    if ($opt_inline && ($cmd eq 'GET' or $cmd eq 'INCLUDE')) {
+        my $file = $values;
         msg_info($context.
             ": Inline inclusion of '$file'");
 
