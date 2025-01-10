@@ -114,6 +114,9 @@ Text:Matches: expect/$ARG1
 Test: Reserve space
 Args: misc/reserve-space
 
+Test: PROC declaration
+Args: misc/proc
+
 
 
 Group: Conditionals

@@ -966,24 +966,32 @@ sub single_line_conv {
     }
 
     # ------ Conversion: functions ------
-    if ($line =~ m/^\s*(\w+)\s+PROC\b/) {
-        my $func_name = $1;
+    if ($cmd eq 'PROC' or $cmd eq 'FUNCTION') {
+        my $func_name = $label;
         if ($opt_compatible) {
             push @symbols, $func_name;
-            $line =~ s/$func_name\s+PROC(.*)$/.type $func_name, "function"$1\n$func_name:/i;
+            if ($values)
+            {
+                $line = ".type $label, \"function\"$values\n$label:$cspcs$comment\n";
+            }
+            else
+            {
+                $line = "$label:$cspcs$comment\n";
+            }
         }
         else {
-            $line =~ s/$func_name\s+PROC/.func $func_name/i;
+            $line = ".func $label\n$label:$cspcs$comment\n";
         }
+        return $line;
     }
-    elsif ($line =~ m/^(\s*)ENDP\b/i) {
+    elsif ($cmd eq 'ENDP' or $cmd eq 'ENDFUNC') {
         if ($opt_compatible) {
             my $func_name = pop @symbols;
             my $func_end  = ".L$func_name"."_end";
-            $line =~ s/^(\s*)ENDP(.*)$/$func_end:$2\n$1.size $func_name, $func_end-$func_name/i;
+            $line = "$func_end:${lspcs}\n$1.size $func_name, $func_end-$func_name$cspcs$comment\n";
         }
         else {
-            $line =~ s/ENDP/.endfunc/i;
+            $line = ".endfunc$cspcs$comment\n";
         }
     }
 
