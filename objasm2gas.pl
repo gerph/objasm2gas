@@ -73,6 +73,23 @@ RETVAL
 # stack
 our @symbols = ();
 
+# Stack of labels that we know.
+our @label_stack = ({'backward'=>{}, 'forward'=>{}});
+# The most recent entry is the highest numbered in the stack (ie $label_stack[-1])
+# The stack will contain a dictionary of:
+#   backward => mapping the local label number to the actual label to use
+#   forward => mapping a supplied label number in the future to the label that should be assigned
+#
+# See: https://developer.arm.com/documentation/101754/0623/armasm-Legacy-Assembler-Reference/Symbols--Literals--Expressions--and-Operators-in-armasm-Assembly-Language/Syntax-of-numeric-local-labels?lang=en
+# F searches the forward stack (or assigns)
+# B searches the backward stack
+# Neither searches backwards, then forwards.
+
+# The label sequence will be incremented on every label creation.
+our $label_sequence = 1;
+# The routine name we're in
+our $label_rout = 'rout';
+
 # command-line switches
 our $opt_compatible  = 0;
 our $opt_verbose     = 0;
@@ -81,10 +98,15 @@ our $opt_nocomment   = 0;
 our $opt_nowarning   = 0;
 our $opt_inline      = 0;
 
-# directives for validation only
-our @drctv_nullary = (
+# directives that don't have any labels
+our %cmd_withoutlabel = map { $_ => 1  } (
     "THUMB", "REQUIRE8", "PRESERVE8", "CODE16", "CODE32", "ELSE", "ENDIF",
     "ENTRY", "ENDP","LTORG", "MACRO", "MEND", "MEXIT", "NOFP", "WEND"
+);
+# directives that aren't really using labels
+our %cmd_notlabel = map { $_ => 1  } (
+    "RN", "QN", "DN", "ENTRY",
+    "*", "#", "PROC", "FUNCTION",
 );
 
 # operators
@@ -153,6 +175,7 @@ our %init_val = (
     "L" => 'FALSE',     # logical
     "S" => '""'         # string
 );
+
 # Built in variable values
 # https://developer.arm.com/documentation/100069/0611/Using-armasm/Built-in-variables-and-constants
 our %builtins = (
@@ -723,7 +746,7 @@ sub single_line_conv {
     my $comment;
 
     # FIXME: This parse doesn't handle strings with // in.
-    if ($line =~ /^((?:[A-Z_a-z][A-Z_a-z0-9]*)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/)
+    if ($line =~ /^((?:[A-Z_a-z][A-Z_a-z0-9]*|[0-9]+)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/)
     {
         $label=$1;
         $lspcs=$2;
@@ -801,6 +824,74 @@ sub single_line_conv {
     {
         $cmd = '.endif';
         goto reconstruct
+    }
+
+    if ($label =~ /^\d+$/)
+    {
+        # A numeric label.
+        my $forward = ${ $label_stack[-1] }->{'forward'};
+        my $symbol;
+        if (defined $forward->{$label})
+        {
+            # This is a previously mentioned label, so the one we created can be used
+            $symbol = $forward->{$label};
+            delete $forward->{$label};
+        }
+        else
+        {
+            # This is a new label.
+            $symbol = "L${label_rout}__local_${label}_$label_sequence";
+            $label_sequence++;
+        }
+        # Remember the symbol so that we can look up what it means when we go backwards.
+        ${ $label_stack[-1] }->{'backward'}->{$label} = $symbol;
+
+        $line = s/^\Q$label\E/$symbol/;
+        $label = $symbol;
+    }
+
+    # Routine name declaration
+    if ($cmd eq 'ROUT')
+    {
+        # Clear out the current context in the label stack
+        pop @label_stack;
+        # FIXME: We could mark any forward operation that hadn't been used with an error?
+        push @label_stack, {'backward'=>{}, 'forward'=>{}};
+        $label_sequence += 1;
+
+        if ($label eq '')
+        {
+            $label_rout = 'rout';
+
+            # There's nothing else to do here
+            return undef;
+        }
+        $line = "$label: $lspcs$cspcs$vspcs$comment\n";
+        $line =~ s/:\s*\n/:\n/;
+        return $line;
+    }
+
+    # Label splitting
+    if ($label ne '' and not defined $cmd_notlabel{$cmd})
+    {
+        # Labelled statement seen.
+        if ($cmd ne '')
+        {
+            #print "COMMAND: $cmd\n";
+            if (defined $cmd_withoutlabel{$cmd})
+            {
+                exit_error($ERR_SYNTAX, "$context".
+                           ": Directive '$cmd' is not allowed to have a label");
+            }
+            $line =~ s/^\Q$label\E/' ' x length($label)/e;
+            my $newline = single_line_conv($line);
+            #print "Got back $newline\n";
+            if (defined $newline)
+            {
+                return "$label:\n$newline";
+            }
+        }
+        goto reconstruct;
     }
 
     # Byte/String constants
@@ -915,37 +1006,9 @@ sub single_line_conv {
         return undef;
     }
 
-    # remove special symbol delimiter
-    #$line =~ s/\|//;
-
     # ------ Conversion: labels ------
     given ($line) {
-        # single label
-        when (m/^([a-zA-Z_]\w*)\s*(\/\/.*)?$/) {
-            my $label = $1;
-            $line =~ s/$label/$label:/ unless ($label ~~ @drctv_nullary);
-        }
-        # numeric local labels
-        when (m/^\d+\s*(\/\/.*)?$/) {
-            $line =~ s/(\d+)/$1:/;
-        }
-        # scope is not supported in GAS
-        when (m/^((\d+)[a-zA-Z_]\w+)\s*(\/\/.*)?$/) {
-            my $full_label = $1;
-            my $num_label  = $2;
-            msg_warn(1, "$context".
-                ": Numeric local label with scope '$1' is not supported in GAS".
-                ", converting to '$2'");
-            $line =~ s/$full_label/$num_label:/;
-        }
-        # delete ROUT directive
-        when (m/^(\w+\s*ROUT\b)/i) {
-            my $rout = $1;
-            msg_warn(1, "$context".
-                ": Scope of numeric local label is not supported in GAS".
-                ", removing ROUT directives");
-            $line =~ s/$rout//;
-        }
+        # FIXME: This needs to be implemented properly.
         # branch jump
         when (m/^\s*B[A-Z]*\s+(%([FB]?)([AT]?)(\d+)(\w*))/i) {
             my $label        = $1;
@@ -1245,11 +1308,12 @@ reconstruct:
     # Reconstruct the line from the components
     if ($label ne '' && $label !~ /:$/)
     {
-        $label = "$label:";
-        $lspcs =~ s/ //; # Remove 1 space from $lspcs if we can.
+        $lspcs = (' ' x length($label)) . $lspcs;
+        $label = "$label:\n";
     }
     $line = "$label$lspcs$cmd$cspcs$values$vspcs$comment";
-    if ($line !~ /\n/)
+    $line =~ s/ +\n?$//;
+    if ($line !~ /\n$/)
     {
         $line .= "\n";
     }

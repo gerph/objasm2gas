@@ -1,0 +1,20 @@
+
+// A set of plain labels
+
+first:
+        MOV     pc,lr
+
+second:
+        .word     5
+third:
+        .asciz "String"
+fourth:
+                                // just label with comment
+fifth:
+        MOV     r0, lr          // instruction with comment
+
+newrout:
+again:
+
+        .end
+

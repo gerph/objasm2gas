@@ -2426,6 +2426,7 @@
 // EOF
 
 
+hello_world:
         ADR     r0, hello
         MOV     r1, #0
         ADR     r2, world
