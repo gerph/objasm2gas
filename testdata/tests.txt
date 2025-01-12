@@ -123,6 +123,9 @@ Args: expressions/compound
 Test: Comparison expressions
 Args: expressions/comparison
 
+Test: Confusing a label with an expression
+Args: expressions/confused_labels
+
 
 
 Group: Miscellaneous

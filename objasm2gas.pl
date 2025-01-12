@@ -1444,7 +1444,7 @@ sub expand_literals
             #    ": Converting hexadecimal '&$hex_lit' to '0x$hex_lit'");
             $line =~ s/${sign}&$hex_lit/${sign}0x$hex_lit/;
         }
-        elsif ($line =~ m/(-?)([2|8])_(\d+)/) {
+        elsif ($line =~ m/(-?)(?<![A-Za-z_0-9])([2|8])_(\d+)/) {
             my $sign = $1;
             my $base = $2;
             my $lit  = $3;

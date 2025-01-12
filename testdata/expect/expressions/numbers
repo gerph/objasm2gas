@@ -1,4 +1,4 @@
-// Test some string expressions
+// Test some number expressions
 
     .section .text, "ax"
 
@@ -22,6 +22,11 @@
 
 // 10|3
     .byte 11
+
+// Check for base 2 (27)
+    .byte 27
+// and base 8 (53)
+    .byte 53
 
         .end
 
