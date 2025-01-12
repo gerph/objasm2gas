@@ -74,11 +74,12 @@ RETVAL
 our @symbols = ();
 
 # Stack of labels that we know.
-our @label_stack = ({'backward'=>{}, 'forward'=>{}});
+our @label_stack = ({'backward'=>{}, 'forward'=>{}, 'rout'=>'rout'});
 # The most recent entry is the highest numbered in the stack (ie $label_stack[-1])
 # The stack will contain a dictionary of:
 #   backward => mapping the local label number to the actual label to use
 #   forward => mapping a supplied label number in the future to the label that should be assigned
+#   rout => the routine name that we're in ('rout' if undefined)
 #
 # See: https://developer.arm.com/documentation/101754/0623/armasm-Legacy-Assembler-Reference/Symbols--Literals--Expressions--and-Operators-in-armasm-Assembly-Language/Syntax-of-numeric-local-labels?lang=en
 # F searches the forward stack (or assigns)
@@ -87,8 +88,6 @@ our @label_stack = ({'backward'=>{}, 'forward'=>{}});
 
 # The label sequence will be incremented on every label creation.
 our $label_sequence = 1;
-# The routine name we're in
-our $label_rout = 'rout';
 
 # command-line switches
 our $opt_compatible  = 0;
@@ -608,6 +607,10 @@ sub expand_macro {
     }
     $our_context = "${our_context}[Macro $macroname] ";
 
+    # We're in a macro
+    my $inrout = $label_stack[-1]->{'rout'};
+    push @label_stack, {'backward'=>{}, 'forward'=>{}, 'rout'=>"_${inrout}_macro_$macroname"};
+
     $in_file = $macrodef->{'base_file'};
     $linenum_input = $macrodef->{'base_line'};
     for my $line (@{ $macrodef->{'lines'} })
@@ -633,6 +636,12 @@ sub expand_macro {
     print $f_out "\n";  # required by as
     $linenum_output += 1;
 
+    my $macro_labels = pop @label_stack;
+    if (scalar( keys %{ $macro_labels->{'backward'} }) > 0)
+    {
+        # If any labels were defined, increment the sequence number, so that we don't clash.
+        $label_sequence++;
+    }
     ($in_file, $linenum_input, $context) = @caller_context;
 }
 
@@ -847,6 +856,7 @@ sub single_line_conv {
                 $label_sequence++;
             }
 
+            my $label_rout = $label_stack[-1]->{'rout'};
             $symbol = "L${label_rout}__local_${label}_$label_sequence";
         }
         # Remember the symbol so that we can look up what it means when we go backwards.
@@ -907,6 +917,7 @@ sub single_line_conv {
             }
 
             # IF the symbol was not found we need to create the symbol name we will use.
+            my $label_rout = $label_stack[-1]->{'rout'};
             $symbol = "L${label_rout}__local_${number}_$label_sequence";
             $label_stack[-1]->{'forward'}->{$number} = $symbol;
         }
@@ -930,17 +941,15 @@ sub single_line_conv {
         # Clear out the current context in the label stack
         pop @label_stack;
         # FIXME: We could mark any forward operation that hadn't been used with an error?
-        push @label_stack, {'backward'=>{}, 'forward'=>{}};
+        push @label_stack, {'backward'=>{}, 'forward'=>{}, 'rout'=>'rout'};
         $label_sequence += 1;
 
         if ($label eq '')
         {
-            $label_rout = 'rout';
-
             # There's nothing else to do here
             return undef;
         }
-        $label_rout = $label;
+        $label_stack[-1]->{'rout'} = $label;
         $line = "$label: $lspcs$cspcs$vspcs$comment\n";
         $line =~ s/:\s*\n/:\n/;
         return $line;

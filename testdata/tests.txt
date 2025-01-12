@@ -54,6 +54,9 @@ Args: labels/local
 Test: Local labels that use ROUT
 Args: labels/local_rout
 
+Test: Local labels within a MACRO
+Args: labels/local_macro
+
 
 
 Group: Data file
