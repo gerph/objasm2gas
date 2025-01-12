@@ -4,9 +4,12 @@ LABEL   ; Symbol as label
 
 ; scope is unsupported
 2routA
-routB ROUT ; delete ROUT
+routB ROUT ; ROUT resets local labelling
 3routB
 
+1
+2
+3
 ; branch to numeric local label
     B   %b1
     BLT %bt2      ; search level is unsupported
@@ -34,11 +37,12 @@ ENDP
 ; ----- Conversion: conditional directives -----
     IF :DEF:__MICROLIB
     ENDIF
-    IF :LNOT::DEF:__MICROLIB
-    ELSEIF __STDLIB
-        IF __DEBUG
-        ENDIF
-    ENDIF
+; ELSEIF not currently supported
+;    IF :LNOT::DEF:__MICROLIB
+;    ELSEIF __STDLIB
+;        IF __DEBUG
+;        ENDIF
+;    ENDIF
 
 ; ----- Conversion: operators -----
     MOV     r1, #(7:SHL:2)

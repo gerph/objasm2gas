@@ -6,7 +6,7 @@
       <a href="https://github.com/gerph/objasm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
 </p>
 </div>
-Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS)
+Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 
 ## Usage
 
@@ -25,7 +25,8 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS)
 | `-s, --strict`          | Error on directives that have no equivalent counterparts |
 | `-v, --version`         | Show version info                                       |
 | `-w, --no-warning`      | Suppress all warning messages                           |
-| `-x, --suffix=<string>` | Suffix of the output filename [default: '.out']         |
+| `-x, --suffix=<string>` | Suffix of the output filename [default: '`.out`']       |
+| `--inline`              | Process the `GET` and `INCLUDE` inline as objasm, rather than generating a GNU as include |
 
 ## Supported conversions
 

@@ -755,7 +755,7 @@ sub single_line_conv {
     my $comment;
 
     # FIXME: This parse doesn't handle strings with // in.
-    if ($line =~ /^((?:[A-Z_a-z][A-Z_a-z0-9]*|[0-9]+)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/)
+    if ($line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/)
     {
         $label=$1;
         $lspcs=$2;
@@ -789,6 +789,7 @@ sub single_line_conv {
             ": Unrecognised line format '$line'");
         return undef;
     }
+    #print "LINE: label='$label', cmd='$cmd', values='$values', comment='$comment'\n";
 
     # ------ Conversion: space reservation ------
     if ($cmd eq 'SPACE' || $cmd eq '%')
@@ -868,11 +869,11 @@ sub single_line_conv {
     }
 
     # ------ Conversion: label usage ------
-    if ($values =~ /(?<![0-9A-Za-zA-Z_)])%([FB]?)([TA]?)(\d+)/ && $values !~ /"/)
+    if ($values =~ /(?<![0-9A-Za-zA-Z_)])%([FB]?)([TA]?)(\d+)/i && $values !~ /"/)
     {
         # There is a label usage present, which we need to expand
-        my $direction = $1;
-        my $scoping = $2;
+        my $direction = uc $1;
+        my $scoping = uc $2;
         my $number = $3;
         # If no direction is given, we search backwards then forwards
         # T searches in this scope; A searches all levels; nothing should search upwards
@@ -929,10 +930,13 @@ sub single_line_conv {
         }
 
         # Now replace the value
-        $values =~ s/%([FB]?)([TA]?)(\d+)/$symbol/;
+        $values =~ s/%([FB]?)([TA]?)(\d+)/$symbol/i;
 
         # Update the line as well
-        $line =~ s/%([FB]?)([TA]?)(\d+)/$symbol/;
+        $line =~ s/%([FB]?)([TA]?)(\d+)/$symbol/i;
+
+        #print "Converted label in values to $values\n";
+        #print "Converted label in line to $line\n";
     }
 
     # Routine name declaration
