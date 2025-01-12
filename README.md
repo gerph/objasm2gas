@@ -30,7 +30,7 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS)
 ## Supported conversions
 
 - [X] [Comments](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Comments?lang=en)
-- [X] [Labels\*](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Labels?lang=en)
+- [X] [Labels](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Labels?lang=en)
 - [X] [Numeric local labels](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Numeric-local-labels?lang=en)
 - [X] [Functions](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Functions?lang=en)
 - [X] [Sections](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Sections?lang=en)
@@ -45,11 +45,11 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS)
 - [X] [Directives: Symbol definition](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Symbol-definition-directives?lang=en)
 - [X] [Directives: Miscellaneous](https://developer.arm.com/documentation/dui0742/g/Migrating-ARM-syntax-assembly-code-to-GNU-syntax/Miscellaneous-directives?lang=en)
 
-[\*] *inline label is not supported yet.*
-
 - [X] `GET` and `INCLUDE` inline
 - [X] RISC OS format filename handling
 - [X] Macro expansion (tentative)
+- [X] Local (numeric) labels
+- [X] Conditionals with expressions
 
 
 ## Demo
@@ -96,6 +96,4 @@ Note that `objasm2gas` *assumes that the input file is in the **correct** syntax
 
 ## TODO
 
-- [ ] Inline label
 - [ ] Loops
-- [ ] Proper conditionals

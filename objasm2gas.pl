@@ -826,10 +826,11 @@ sub single_line_conv {
         goto reconstruct
     }
 
+    # ------ Conversion: local label assignment ------
     if ($label =~ /^\d+$/)
     {
         # A numeric label.
-        my $forward = ${ $label_stack[-1] }->{'forward'};
+        my $forward = $label_stack[-1]->{'forward'};
         my $symbol;
         if (defined $forward->{$label})
         {
@@ -840,14 +841,87 @@ sub single_line_conv {
         else
         {
             # This is a new label.
+            # Only increment the sequence if this replaces a prior label name
+            if (defined $label_stack[-1]->{'backward'}->{$label})
+            {
+                $label_sequence++;
+            }
+
             $symbol = "L${label_rout}__local_${label}_$label_sequence";
-            $label_sequence++;
         }
         # Remember the symbol so that we can look up what it means when we go backwards.
-        ${ $label_stack[-1] }->{'backward'}->{$label} = $symbol;
+        $label_stack[-1]->{'backward'}->{$label} = $symbol;
 
-        $line = s/^\Q$label\E/$symbol/;
+        $line =~ s/^\Q$label\E(\s?)\s*/$symbol$1/;
+        $lspcs = $1;
         $label = $symbol;
+    }
+
+    # ------ Conversion: label usage ------
+    if ($values =~ /(?<![0-9A-Za-zA-Z_)])%([FB]?)([TA]?)(\d+)/ && $values !~ /"/)
+    {
+        # There is a label usage present, which we need to expand
+        my $direction = $1;
+        my $scoping = $2;
+        my $number = $3;
+        # If no direction is given, we search backwards then forwards
+        # T searches in this scope; A searches all levels; nothing should search upwards
+        # We're not going to support the 'nothing' for scoping because it's a lot more complex.
+
+        my $symbol;
+        # Backwards search
+        if ($direction eq 'B' or $direction eq '')
+        {
+            if ($scoping eq 'T')
+            {
+                # Search backward in current scope
+                $symbol = $label_stack[-1]->{'backward'}->{$number};
+            }
+            else
+            {
+                # Search backward in all scopes
+                for my $stack (reverse @label_stack)
+                {
+                    $symbol = $stack->{'backward'}->{$number};
+                    last if (defined $symbol);
+                }
+            }
+        }
+
+        # Forwards search, or search if the backwards failed and no direction given
+        if ($direction eq 'F' or ($direction eq '' and !defined $symbol))
+        {
+            if ($scoping eq 'T')
+            {
+                # Search backward in current scope
+                $symbol = $label_stack[-1]->{'forward'}->{$number};
+            }
+            else
+            {
+                # Search backward in all scopes
+                for my $stack (reverse @label_stack)
+                {
+                    $symbol = $stack->{'forward'}->{$number};
+                    last if (defined $symbol);
+                }
+            }
+
+            # IF the symbol was not found we need to create the symbol name we will use.
+            $symbol = "L${label_rout}__local_${number}_$label_sequence";
+            $label_stack[-1]->{'forward'}->{$number} = $symbol;
+        }
+
+        if (!defined $symbol)
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                       ": Search for local label '$number' failed");
+        }
+
+        # Now replace the value
+        $values =~ s/%([FB]?)([TA]?)(\d+)/$symbol/;
+
+        # Update the line as well
+        $line =~ s/%([FB]?)([TA]?)(\d+)/$symbol/;
     }
 
     # Routine name declaration
@@ -866,6 +940,7 @@ sub single_line_conv {
             # There's nothing else to do here
             return undef;
         }
+        $label_rout = $label;
         $line = "$label: $lspcs$cspcs$vspcs$comment\n";
         $line =~ s/:\s*\n/:\n/;
         return $line;

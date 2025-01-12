@@ -1,0 +1,32 @@
+
+// Some tests of the local labels
+
+// Simple local labels - alone, with code, with comment
+Lrout__local_10_1:
+
+Lrout__local_20_1:
+                  MOV     r0, r5
+Lrout__local_30_1:
+                  // comment
+
+// Backward branches in the common BT form - alone, with label
+        B       Lrout__local_20_1
+Lrout__local_40_1:
+                  B       Lrout__local_20_1
+
+// Replacement label and branch
+Lrout__local_20_2:
+        B       Lrout__local_20_2
+
+
+// Forward references
+        B       Lrout__local_30_2
+        B       Lrout__local_30_2       // reuse of FT30
+        B       Lrout__local_30_1       // back to the prior 30
+
+// this is the 30 we went forward to
+Lrout__local_30_2:
+        B       Lrout__local_30_2       // back to the 30 we just created
+
+        .end
+

@@ -48,6 +48,12 @@ Text:Matches: expect/$ARG1
 Test: Plain labels
 Args: labels/plain
 
+Test: Local labels
+Args: labels/local
+
+Test: Local labels that use ROUT
+Args: labels/local_rout
+
 
 
 Group: Data file
