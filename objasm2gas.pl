@@ -106,8 +106,10 @@ our %cmd_withoutlabel = map { $_ => 1  } (
 our %cmd_notlabel = map { $_ => 1  } (
     "RN", "QN", "DN", "ENTRY",
     "*", "#", "PROC", "FUNCTION",
+    'SETA', 'SETL', 'SETS',
 );
 
+# FIXME: Old style operators - remove
 # operators
 our %operators = (
     ":OR:"   => "|",
@@ -121,6 +123,30 @@ our %operators = (
     ":LAND:" => "&&",
 );
 our $operators_re = "(?:" . (join '|', keys %operators) . ")";
+# FIXME: Old style operators - remove to here
+
+# operators
+our %operators_binary = (
+    "|"      => sub { my ($left, $right) = @_; return $left | $right },
+    ":OR:"   => sub { my ($left, $right) = @_; return $left | $right },
+    ":EOR:"  => sub { my ($left, $right) = @_; return $left ^ $right },
+    "&"      => sub { my ($left, $right) = @_; return $left & $right },
+    ":AND:"  => sub { my ($left, $right) = @_; return $left & $right },
+    "%"      => sub { my ($left, $right) = @_; return $left % $right },
+    ":MOD:"  => sub { my ($left, $right) = @_; return $left % $right },
+    "<<"     => sub { my ($left, $right) = @_; return $left << $right },
+    ":SHL:"  => sub { my ($left, $right) = @_; return $left << $right },
+    ">>"     => sub { my ($left, $right) = @_; return $left >> $right },
+    ":SHR:"  => sub { my ($left, $right) = @_; return $left >> $right },
+    ":LOR:"  => sub { my ($left, $right) = @_; return ($left || $right) ? 1 : 0 },
+    ":LAND:" => sub { my ($left, $right) = @_; return ($left && $right) ? 1 : 0},
+);
+our $operators_binary_re = "(?:" . (join '|', keys %operators_binary) . ")";
+our %operators_monadic = (
+    "~"      => sub { my ($right) = @_; return ($right) ^ 0xFFFFFFFF },
+    ":NOT:"  => sub { my ($right) = @_; return ($right) ^ 0xFFFFFFFF },
+);
+our $operators_monadic_re = "(?:" . (join '|', map { "\\Q$_\\E" } keys %operators_monadic) . ")";
 
 # simple replace
 our %misc_op = (
@@ -339,6 +365,17 @@ my %mapping             = ();
 my %constant            = ();
 our %macros;
 our $macroname;
+
+# The variables are set with SET[ALS].
+# The stack contains the global variables at the top,
+# with local entries below that.
+# Each set of entries is a dictionary containing the variable names.
+# The value of each entry is a dictionary containing:
+#   value => the value of the variable
+#   context => the context it was created in
+#   type => the variable type (A, L, S)
+our @variable_stack = ({}, {});
+
 
 END {
     # If we failing whilst writing a file, delete it.
@@ -1146,6 +1183,37 @@ sub single_line_conv {
         }
     }
 
+    # ------ Conversion: symbol definition ------
+    if ($cmd =~ m/^(LCL|GBL)([A|L|S])$/) {
+        my $scope = ($1 eq 'LCL') ? 'L' : 'G';
+        my $type = $2;
+        my $var = $values;
+        declare_variable($var, $scope, $type);
+        if ($scope eq 'G')
+        {
+            $line =~ s/GBL$type/.set/i;
+            $line =~ s/$var/"$var, ".$init_val{$type}/ei;
+            $line = "$lspcs.global $var\n" . $line;
+            return $line;
+        }
+        else
+        {
+            return undef;
+        }
+    }
+    elsif ($cmd =~ /^SET([A|L|S])$/i) {
+        my $var = $label;
+        my $val = evaluate($values);
+        my $type = $1;
+        my $v = set_variable($var, $val, $type);
+        if ($v->{'scope'} eq 'G')
+        {
+            $line = ".set $var, $val";
+            return $line;
+        }
+        return undef;
+    }
+
     # ------ Conversion: sections ------
     if ($line =~ m/^\s*AREA\s+\|*([.\w\$]+)\|*([^\/]*?)(\s*\/\/.*)?$/i) {
 
@@ -1350,31 +1418,6 @@ sub single_line_conv {
         $line =~ s/\b($miscquoted_op_re)(\s+)("[a-zA-Z_0-9\.\-\/]+")/$miscquoted_op{$1}$2$3/;
     }
 
-    # ------ Conversion: symbol definition ------
-    if ($line =~ m/^\s+LCL([A|L|S])\s+(\w+)/i) {
-        my $var_type = $1;
-        my $var_name = $2;
-        msg_warn(1, "$context".
-            ": Local variable '$var_name' is not supported".
-            ", using static declaration");
-        $line =~ s/LCL$var_type/.set/i;
-        $line =~ s/$var_name/"$var_name, ".$init_val{$var_type}/ei;
-    }
-    elsif ($line =~ m/^(\s*)GBL([A|L|S])\s+(\w+)/i) {
-        my $indent   = $1;
-        my $var_type = $2;
-        my $var_name = $3;
-        $line =~ s/GBL$var_type/.set/i;
-        $line =~ s/$var_name/"$var_name, ".$init_val{$var_type}/ei;
-        $line = "$indent.global $var_name\n" . $line;
-    }
-    elsif ($line =~ m/^(\w+)\s*(SET[A|L|S])/i) {
-        my $var_name = $1;
-        my $drctv    = $2;
-        $line =~ s/$var_name/.set/;
-        $line =~ s/$drctv/$var_name,/;
-    }
-
     # ------ Conversion: labels on instructions ------
     if ($line =~ m/^([a-zA-Z_][a-zA-Z_0-9]*)(\s+)([A-Z])/) {
         my $label = $1;
@@ -1426,6 +1469,121 @@ sub dec2hex {
         }
     }
     return $hexnum;
+}
+
+
+##
+# Find a variable
+#
+# @param[in] $var:      The variable to set
+#
+# @return:  The variable declaration hashref, or undef if not found
+sub find_variable
+{
+    my ($var, $val) = @_;
+    for my $vars (reverse @variable_stack)
+    {
+        my $v = $vars->{$var};
+        if (defined $v)
+        {
+            return $v;
+        }
+    }
+    return undef;
+}
+
+
+##
+# Declare a variable
+#
+# @param[in] $var:      The variable to declare
+# @param[in] $scope:    G or L for global or local scope
+# @param[in] $type:     Type of variable (L, A, S)
+sub declare_variable
+{
+    my ($var, $scope, $type) = @_;
+    my $vlist;
+    our $context;
+    if ($scope eq 'G')
+    {
+        $vlist = $variable_stack[0];
+    }
+    else
+    {
+        $vlist = $variable_stack[-1];
+    }
+    my $v = {
+            'value' => $init_val{$type},
+            'type' => $type,
+            'context' => $context,
+            'scope' => $scope,
+        };
+    $vlist->{$var} = $v;
+}
+
+
+##
+# Set a variable
+#
+# @param[in] $var:      The variable to set
+# @param[in] $val:      The value to set
+# @param[in] $type:     Type to set as
+sub set_variable
+{
+    my ($var, $val, $vtype) = @_;
+    our $context;
+    for my $vars (reverse @variable_stack)
+    {
+        my $v = $vars->{$var};
+        if (defined $v)
+        {
+            # Variable exists at this level of the stack.
+            my $type = $v->{'type'};
+            if ($vtype ne $type)
+            {
+                # FIXME: Should we warn that you tried to set it with the wrong type? Or Error?
+            }
+            if ($type eq 'L')
+            {
+                if ($val eq 'T' || $val eq 'TRUE' || $val eq '1')
+                {
+                    $val = 'T';
+                }
+                elsif ($val eq 'F' || $val eq 'FALSE' || $val eq '0')
+                {
+                    $val = 'F';
+                }
+                else
+                {
+                    $val = (!!$val) ? 'T' : 'F';
+                }
+            }
+            elsif ($type eq 'A')
+            {
+                if ($val eq 'T' || $val eq 'TRUE')
+                {
+                    $val = '1';
+                }
+                elsif ($val eq 'F' || $val eq 'FALSE' || $val eq '')
+                {
+                    $val = '0';
+                }
+                else
+                {
+                    $val = 0 + $val;
+                }
+            }
+            elsif ($type eq 'S')
+            {
+                $val = "$val";
+            }
+            $v->{'value'} = $val;
+            # The value was assigned
+            return $v;
+        }
+    }
+    exit_error($ERR_SYNTAX, "$context".
+        ": Variable '$var' cannot be set to type $vtype, value '$val' as it has not been declared with GBL or LCL");
 }
 
 
@@ -1485,6 +1643,104 @@ sub expand_variables
                $val;
               /ge;
     return $expr;
+}
+
+
+##
+# Evaluate an expression, if we can.
+#
+# @param[in] $expr:     Expression to evaluate
+#
+# @return:  (value as a number if possible or string if not,
+#            trailing string)
+sub expression
+{
+    my ($expr) = @_;
+    my $orig = $expr;
+    our $context;
+    our %cmp_number;
+
+    # This is not going to be a proper parser for numeric expressions; it's going
+    # to be very simple just to parse expressions left to right.
+    my $left = undef;
+    my $operator = undef;
+    my $monadic = undef;
+
+    # Trim the leading spaces so that we can expand things easier
+    $expr =~ s/^\s+//;
+
+    while ($expr ne '')
+    {
+        if (!defined $left || defined $operator)
+        {
+            # Monadic operators can only happen if there is no left parameter, or
+            # an operator has been given (start of line or after operator).
+            if ($expr =~ s/^($operators_monadic_re)//)
+            {
+                my $monoop = $operators_monadic{$1};
+                if (defined $monadic)
+                {
+                    # A monadic op has already been seen, so we need to chain these
+                    # operators.
+                    my $lastmonadic = $monadic;
+                    $monadic = sub { my ($right) = @_; return $monoop->($lastmonadic->($right)) };
+                    goto next_token;
+                }
+                $monadic = $monoop;
+                goto next_token;
+            }
+        }
+
+        if (defined $left && !defined $monadic && !defined $operator)
+        {
+            # We're expecting an operator here.
+            if ($expr =~ s/^($operators_binary_re)//)
+            {
+                my $binop = $operators_binary{$1};
+                $operator = $binop;
+                goto next_token;
+            }
+        }
+
+        # We are now expecting an expression, either for the left or the right.
+        my $value;
+        if ($expr =~ s/^\(//)
+        {
+            # Bracketted expression, so we need to extract from that expression the value.
+            ($value, $expr) = expression($expr);
+            if ($expr =~ s/^\)//)
+            {
+                # All is well, they ended with a bracket
+            }
+            else
+            {
+                exit_error($ERR_SYNTAX, "$context".
+                    ": Evaluation of variables in '$orig' was missing a closing bracket, instead got '$expr'");
+            }
+        }
+        else
+        {
+            # FIXME: Evaluate a variable.
+            die "NOT IMPLEMENTED"
+        }
+
+next_token:
+        $expr =~ s/^\s+//;
+    }
+
+    if (defined $left && defined $operator)
+    {
+        exit_error($ERR_SYNTAX, "$context".
+            ": Evaluation of variables in '$orig' was missing a right hand operator at '$expr'");
+    }
+
+    if (defined $monadic)
+    {
+        exit_error($ERR_SYNTAX, "$context".
+            ": Evaluation of variables in '$orig' failed at a monadic expansion due to missing right hand operator (at '$expr')");
+    }
+
+    return ($left, $expr);
 }
 
 

@@ -105,6 +105,9 @@ Text:Matches: expect/$ARG1
 Test: Builtins
 Args: variables/builtins
 
+Test: Builtins
+Args: variables/globals
+
 
 Group: Expressions
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s

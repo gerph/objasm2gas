@@ -1,0 +1,14 @@
+
+// Simple global assignments
+
+        .section .text, "ax"
+
+// declare a string variable
+        .global MESSAGE
+        .set    MESSAGE, ""
+.set MESSAGE, "Hello"
+
+.asciiz "Hello"
+
+        .end
+
