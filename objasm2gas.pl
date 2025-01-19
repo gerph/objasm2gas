@@ -29,6 +29,7 @@ Options:
     -w, --no-warning            Suppress all warning messages
     -x, --suffix=<string>       Suffix of the output filename [default: '.out']
     --inline                    Process GET and INCLUDE inline
+    --test-expr=<expr>          Test the expression processor
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
@@ -96,6 +97,7 @@ our $opt_strict      = 0;
 our $opt_nocomment   = 0;
 our $opt_nowarning   = 0;
 our $opt_inline      = 0;
+our $opt_testexpr    = 0;
 
 # directives that don't have any labels
 our %cmd_withoutlabel = map { $_ => 1  } (
@@ -125,28 +127,86 @@ our %operators = (
 our $operators_re = "(?:" . (join '|', keys %operators) . ")";
 # FIXME: Old style operators - remove to here
 
+##
+# Convert a string (in quotes to its simple form).
+sub unstr
+{
+    my ($arg) = @_;
+    if ($arg =~ /^"([^"]*)"$/)
+    {
+        return $1;
+    }
+    return "$arg";
+}
+
+##
+# Convert a unsigned number to a signed one.
+sub signed
+{
+    my ($arg) = @_;
+    if ($arg & (1<<31))
+    {
+        $arg = ($arg & 0xFFFFFFFF) - (1<<32);
+    }
+    return $arg;
+}
+
 # operators
 our %operators_binary = (
+    # Arithmetic
+    "+"      => sub { my ($left, $right) = @_; return $left + $right },
+    "-"      => sub { my ($left, $right) = @_; return $left - $right },
+    "*"      => sub { my ($left, $right) = @_; return $left * $right },
+    "/"      => sub { my ($left, $right) = @_; return int($left / $right) },
+    "%"      => sub { my ($left, $right) = @_; return $left % $right },
+    ":MOD:"  => sub { my ($left, $right) = @_; return $left % $right },
+    # Binary
     "|"      => sub { my ($left, $right) = @_; return $left | $right },
     ":OR:"   => sub { my ($left, $right) = @_; return $left | $right },
     ":EOR:"  => sub { my ($left, $right) = @_; return $left ^ $right },
     "&"      => sub { my ($left, $right) = @_; return $left & $right },
     ":AND:"  => sub { my ($left, $right) = @_; return $left & $right },
-    "%"      => sub { my ($left, $right) = @_; return $left % $right },
-    ":MOD:"  => sub { my ($left, $right) = @_; return $left % $right },
     "<<"     => sub { my ($left, $right) = @_; return $left << $right },
     ":SHL:"  => sub { my ($left, $right) = @_; return $left << $right },
     ">>"     => sub { my ($left, $right) = @_; return $left >> $right },
     ":SHR:"  => sub { my ($left, $right) = @_; return $left >> $right },
+    # Boolean
     ":LOR:"  => sub { my ($left, $right) = @_; return ($left || $right) ? 1 : 0 },
-    ":LAND:" => sub { my ($left, $right) = @_; return ($left && $right) ? 1 : 0},
+    ":LAND:" => sub { my ($left, $right) = @_; return ($left && $right) ? 1 : 0 },
+    # String
+    ":LEFT:" => sub { my ($left, $right) = @_; return '"'. (signed($right) > 0 ? substr(unstr($left), 0, $right) : '') .'"' },
+    ":RIGHT:" => sub { my ($left, $right) = @_; return '"'. (signed($right) > 0 ? substr(unstr($left), -$right) : '') .'"' },
+    ":CC:"   => sub { my ($left, $right) = @_; return '"'. unstr($left) . unstr($right) .'"' },
+    # FIXME: We don't support:
+    #   ?symbol
+    #   :BASE:
+    #   :INDEX:
+    #   :DEF:
+    #   :LNOT:
+    #   :RCONST:
+    #   :CC_ENCODING:
+    #   :REVERSE_CC:
+    #   :MOD:
+    #   :ROR:
+    #   :ROL:
+    # See: https://developer.arm.com/documentation/dui0801/g/Symbols--Literals--Expressions--and-Operators/Unary-operators?lang=en
 );
-our $operators_binary_re = "(?:" . (join '|', keys %operators_binary) . ")";
+our $operators_binary_re = "(?:" . (join '|', map { "\Q$_\E" } keys %operators_binary) . ")";
 our %operators_monadic = (
+    # Arithmetic
+    "+"      => sub { my ($right) = @_; return (0+$right) & 0xFFFFFFFF },
+    "-"      => sub { my ($right) = @_; return (0-$right) & 0xFFFFFFFF },
+    # Binary
     "~"      => sub { my ($right) = @_; return ($right) ^ 0xFFFFFFFF },
     ":NOT:"  => sub { my ($right) = @_; return ($right) ^ 0xFFFFFFFF },
+    # String
+    ":LEN:"  => sub { my ($right) = @_; return length(unstr($right)) },
+    ":UPPERCASE:" => sub { my ($right) = @_; return '"'. uc(unstr($right)) .'"' },
+    ":LOWERCASE:" => sub { my ($right) = @_; return '"'. lc(unstr($right)) .'"' },
+    ":STR:"  => sub { my ($right) = @_; return sprintf "\"%08x\"", (0+$right); },
+    ":CHR:"  => sub { my ($right) = @_; return sprintf "\"%c\"", (0+$right); },
 );
-our $operators_monadic_re = "(?:" . (join '|', map { "\\Q$_\\E" } keys %operators_monadic) . ")";
+our $operators_monadic_re = "(?:" . (join '|', map { "\Q$_\E" } keys %operators_monadic) . ")";
 
 # simple replace
 our %misc_op = (
@@ -197,7 +257,7 @@ our %miscquoted_op = (
 # variable initial value
 our %init_val = (
     "A" => '0',         # arithmetic
-    "L" => 'FALSE',     # logical
+    "L" => 'F',         # logical
     "S" => '""'         # string
 );
 
@@ -319,27 +379,28 @@ GetOptions(
     "s|strict"      => \$opt_strict,
     "n|no-comment"  => \$opt_nocomment,
     "w|no-warning"  => \$opt_nowarning,
-    "inline"        => \$opt_inline
+    "inline"        => \$opt_inline,
+    "test-expr=s"   => \$opt_testexpr,
 ) or die("Conversion of ObjASM source to GAS source failed\n");
 
 @input_files = @ARGV;
 
 # validate input
-if (@input_files == 0) {
+if (@input_files == 0 && !$opt_testexpr) {
     exit_error($ERR_ARGV, "$0:".__LINE__.
         ": No input file");
 }
-elsif (@output_files > 0 && $#input_files != $#output_files) {
+elsif (@output_files > 0 && $#input_files != $#output_files && !$opt_testexpr) {
     exit_error($ERR_ARGV, "$0:".__LINE__.
         ": Input and output files must match one-to-one");
 }
-elsif ($output_suffix !~ /^\.*\w+$/) {
+elsif ($output_suffix !~ /^\.*\w+$/ && !$opt_testexpr) {
     exit_error($ERR_ARGV, "$0:".__LINE__.
         ": Invalid suffix '$output_suffix'");
 }
 
 # pair input & output files
-if (@output_files == 0) {
+if (@output_files == 0 && !$opt_testexpr) {
     @output_files = map {"$_$output_suffix"} @input_files;
 }
 my %in_out_files;
@@ -416,6 +477,15 @@ foreach (keys %in_out_files) {
     close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
     close $f_out or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
     $writing = undef;
+}
+
+if ($opt_testexpr)
+{
+    our $context = "Expression";
+    my ($value, $tail) = expression($opt_testexpr);
+    print "Test expression: '$opt_testexpr'\n";
+    print "Gave: '$value'\n";
+    print "Tail: '$tail'\n";
 }
 
 
@@ -1029,71 +1099,38 @@ sub single_line_conv {
         # = "hello", 0
         # We will decode this as a sequence of regex matched strings
         my @lines = ();
-        $values =~ s/\s+$//;
         my @num_accumulator = ();
         while ($values ne '')
         {
-            $values =~ s/^\s//;
-            if ($values eq '')
+            my ($value, $nextvalues) = expression($values);
+
+            if ($value =~ /^"(.*)"$/)
             {
-                # We're done.
-                last;
-            }
-            if ($values =~ /^\/\//)
-            {
-                # We've found a comment, so just append this as a bare line
-                if (@num_accumulator)
-                {   # Flush the number accumulator
-                    push @lines, ".byte " . join ", ", @num_accumulator;
-                    @num_accumulator = ();
+                my $str = $1;
+                if ($nextvalues =~ s/^\s*,\s*0(?=\s|$)//)
+                {
+                    # This is a zero-terminated string, so dump it out raw.
+                    if (@num_accumulator)
+                    {   # Flush the number accumulator
+                        push @lines, ".byte " . join ", ", @num_accumulator;
+                        @num_accumulator = ();
+                    }
+                    push @lines, ".asciz \"$str\"";
                 }
-                push @lines, $values;
-                last;
-            }
-
-            if ($values =~ s/^(\$|\{[^,]+)(?:,|$)//)
-            {
-                # This is a variable or possibly an expression, so expand it
-                my $value = expand_variables($1);
-                $values = $value;
-            }
-
-            if ($values =~ s/^((?:[^",]+|[^",]*"[^"]*")+)//)
-            {
-                my $expr = $1;
-                #print "LBS: $expr\n";
-                $expr = evaluate($expr);
-                $values = $expr . $values;
-            }
-
-
-            if ($values =~ s/^("[^"]*")\s*,\s*0(?=\s|$)//)
-            {
-                # This is a zero-terminated string, so dump it out raw.
-                if (@num_accumulator)
-                {   # Flush the number accumulator
-                    push @lines, ".byte " . join ", ", @num_accumulator;
-                    @num_accumulator = ();
+                else
+                {
+                    # This is a string, so dump it out
+                    if (@num_accumulator)
+                    {   # Flush the number accumulator
+                        push @lines, ".byte " . join ", ", @num_accumulator;
+                        @num_accumulator = ();
+                    }
+                    push @lines, ".ascii \"$str\"";
                 }
-                my $s = expand_variables($1);
-                push @lines, ".asciz $s";
             }
-            elsif ($values =~ s/^("[^"]*")//)
-            {
-                # This is a string, so dump it out
-                if (@num_accumulator)
-                {   # Flush the number accumulator
-                    push @lines, ".byte " . join ", ", @num_accumulator;
-                    @num_accumulator = ();
-                }
-                my $s = expand_variables($1);
-                push @lines, ".ascii $s";
-            }
-            elsif ($values =~ s/^((?:0x|&)[0-9a-f]+|[0-9]+)//i)
+            elsif (defined $value)
             {
                 # This is a number, so we want to accumulate it.
-                my $value = $1;
-                $value =~ s/&/0x/;
                 push @num_accumulator, $value;
             }
             else
@@ -1103,8 +1140,19 @@ sub single_line_conv {
                     ", need a manual check");
                 last;
             }
-            # Trim any commas between parameters
-            $values =~ s/^(,\s*)+//;
+            $values = $nextvalues;
+            if ($values =~ /^,/ || $values eq '')
+            {
+                # Trim any commas between parameters
+                $values =~ s/^(,\s*)+//;
+            }
+            else
+            {
+                msg_warn(1, "$context".
+                    ": Literal byte sequence cannot interpret '$values'".
+                    ", need a manual check");
+                last;
+            }
         }
 
         if (@num_accumulator)
@@ -1659,18 +1707,21 @@ sub expression
     my $orig = $expr;
     our $context;
     our %cmp_number;
+    my $expr_debug = 0;
 
     # This is not going to be a proper parser for numeric expressions; it's going
     # to be very simple just to parse expressions left to right.
     my $left = undef;
     my $operator = undef;
     my $monadic = undef;
+    my $monadicstr = undef;
 
     # Trim the leading spaces so that we can expand things easier
     $expr =~ s/^\s+//;
 
     while ($expr ne '')
     {
+        print "Expression parse: '$expr'\n" if ($expr_debug);
         if (!defined $left || defined $operator)
         {
             # Monadic operators can only happen if there is no left parameter, or
@@ -1678,6 +1729,8 @@ sub expression
             if ($expr =~ s/^($operators_monadic_re)//)
             {
                 my $monoop = $operators_monadic{$1};
+                $monadicstr = defined $monadicstr ? "$monadicstr$1" : $1;
+                print "Monadic operator: $1 (now: $monadicstr)\n" if ($expr_debug);
                 if (defined $monadic)
                 {
                     # A monadic op has already been seen, so we need to chain these
@@ -1697,6 +1750,7 @@ sub expression
             if ($expr =~ s/^($operators_binary_re)//)
             {
                 my $binop = $operators_binary{$1};
+                print "Binary operator: $1\n" if ($expr_debug);
                 $operator = $binop;
                 goto next_token;
             }
@@ -1718,10 +1772,110 @@ sub expression
                     ": Evaluation of variables in '$orig' was missing a closing bracket, instead got '$expr'");
             }
         }
+        # Builtins check
+        elsif ($expr =~ s/^\{([A-Za-z_][A-Za-z0-9_]*)\}//)
+        {
+            print "Builtin: $1\n" if ($expr_debug);
+            $value = defined $builtins{$1} ? (ref($builtins{$1}) eq 'CODE' ? $builtins{$1}->() : $builtins{$1}) : 0;
+            if ($value =~ m![^0-9]!)
+            { $value = '"' . $value . '"'; }
+        }
+        elsif ($expr =~ s/^("[^"]*")//)
+        {
+            my $str_lit = $1;
+            $value = $str_lit;
+        }
+        elsif ($expr =~ s/^2_([01]+)//)
+        {
+            my $bin_lit = $1;
+            $value = oct("0b$bin_lit");
+        }
+        elsif ($expr =~ s/^8_([0-7]+)//)
+        {
+            my $oct_lit = $1;
+            $value = oct($oct_lit);
+        }
+        elsif ($expr =~ s/^(\d+)//)
+        {
+            my $dec_lit = $1;
+            $value = $dec_lit + 0;
+        }
+        elsif ($expr =~ s/^(?:&|0x)([\dA-Fa-f]+)//)
+        {
+            my $hex_lit = $1;
+            $value = hex($hex_lit);
+        }
+        elsif ($expr =~ s/^([A-Za-z_][A-Za-z0-9_]*)//)
+        {
+            my $name = $1;
+            if (defined $mapping{$name})
+            {
+                $value = $mapping{$name};
+            }
+            elsif (defined $constant{$name})
+            {
+                $value = $constant{$name};
+            }
+            else
+            {
+                # Not a mapping or a constant, so it could be an SET value.
+                my $var = find_variable($name);
+                if (defined $var)
+                {
+                    if ($var->{'type'} eq 'A' || $var->{'type'} eq 'S')
+                    {
+                        $value = $var->{'value'};
+                    }
+                    elsif ($var->{'type'} eq 'L')
+                    {
+                        $value = $var->{'value'} eq 'T' ? 1 : 0;
+                    }
+                    else
+                    {
+                        exit_error($ERR_SYNTAX, "$context".
+                            ": Internal consistency failure during evaluation of expression in '$orig'; unrecognised SET type");
+                    }
+                }
+                else
+                {
+                    # Variable isn't recognised.
+                    exit_error($ERR_SYNTAX, "$context".
+                        ": Evaluation of variables in '$orig' could not find a value for '$name' at '$expr'");
+                }
+            }
+        }
         else
         {
-            # FIXME: Evaluate a variable.
-            die "NOT IMPLEMENTED"
+            # Something we don't understand
+            last;
+        }
+
+        if (defined $monadic)
+        {
+            # Call the monadic functions to operate on the value;
+            $value = $monadic->($value);
+            $monadic = undef;
+            if ($monadicstr =~ /[+-]$/ && !defined $operator)
+            {
+                $operator = $operators{'+'};
+            }
+        }
+
+        if (!defined $left)
+        {
+            $left = $value;
+        }
+        elsif (defined $operator)
+        {
+            my $right = $value;
+            $value = $operator->($left, $right);
+            $left = $value;
+            $operator = undef;
+        }
+        else
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Internal consistency failure during evaluation of expression in '$orig'; no operator defined");
         }
 
 next_token:

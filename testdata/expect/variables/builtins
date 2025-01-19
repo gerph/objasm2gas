@@ -3,10 +3,10 @@
         .section .text, "ax"
 
 // AREA: (not objasm, armasm only)
-        .ascii ".text"
+        .asciz ".text"
 
 // Filename (not objasm, armasm only)
-        .ascii "objasm/variables/builtins.s"
+        .asciz "objasm/variables/builtins.s"
 
 // Line number (twice, to see it change) (not objasm, armasm only)
         .balign
@@ -16,13 +16,13 @@
 .set here, 23
 
 // Mapping should be 24
-        .byte 24
+        .byte 24, 0
 
 // Config should be 32
-        .byte 32
+        .byte 32, 0
 
 // Architecture
-        .byte 7
+        .byte 7, 0
 
         .end
 

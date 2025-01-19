@@ -4,16 +4,16 @@
 
 // not 1>2
     .if 0
-        .asciz "0"
+        .asciz "1>2"
     .else
-        .asciz "NOT 0"
+        .asciz "NOT 1>2"
     .endif
 
 // 1<2
     .if 1
-        .asciz "1"
+        .asciz "1<2"
     .else
-        .asciz "NOT 1"
+        .asciz "NOT 1<2"
     .endif
 
 

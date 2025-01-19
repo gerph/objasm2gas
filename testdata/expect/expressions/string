@@ -27,6 +27,7 @@
         .byte 0
 
 // bracketted string
+        .ascii "hello"
 
 // join Hello and World
         .ascii "HelloWorld"
