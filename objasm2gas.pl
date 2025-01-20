@@ -144,12 +144,45 @@ sub unstr
 sub signed
 {
     my ($arg) = @_;
+    $arg = $arg & 0xFFFFFFFF;
     if ($arg & (1<<31))
     {
-        $arg = ($arg & 0xFFFFFFFF) - (1<<32);
+        $arg = $arg - (1<<32);
     }
     return $arg;
 }
+
+##
+# Convert a signed number to an unsigned one.
+sub unsigned
+{
+    my ($arg) = @_;
+    $arg = $arg & 0xFFFFFFFF;
+    return $arg;
+}
+
+##
+# Check if the parameters are strings
+sub isstring
+{
+    for my $arg (@_)
+    {
+        if ("$arg" =~ /[^0-9\-]/)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+##
+# Return a boolean value.
+sub bool
+{
+    my ($arg) = @_;
+    return $arg ? 1 : 0;
+}
+
 
 # operators
 our %operators_binary = (
@@ -158,24 +191,44 @@ our %operators_binary = (
     "-"      => sub { my ($left, $right) = @_; return $left - $right },
     "*"      => sub { my ($left, $right) = @_; return $left * $right },
     "/"      => sub { my ($left, $right) = @_; return int($left / $right) },
-    "%"      => sub { my ($left, $right) = @_; return $left % $right },
     ":MOD:"  => sub { my ($left, $right) = @_; return $left % $right },
     # Binary
-    "|"      => sub { my ($left, $right) = @_; return $left | $right },
     ":OR:"   => sub { my ($left, $right) = @_; return $left | $right },
     ":EOR:"  => sub { my ($left, $right) = @_; return $left ^ $right },
-    "&"      => sub { my ($left, $right) = @_; return $left & $right },
     ":AND:"  => sub { my ($left, $right) = @_; return $left & $right },
-    "<<"     => sub { my ($left, $right) = @_; return $left << $right },
     ":SHL:"  => sub { my ($left, $right) = @_; return $left << $right },
-    ">>"     => sub { my ($left, $right) = @_; return $left >> $right },
     ":SHR:"  => sub { my ($left, $right) = @_; return $left >> $right },
     # Boolean
-    ":LOR:"  => sub { my ($left, $right) = @_; return ($left || $right) ? 1 : 0 },
-    ":LAND:" => sub { my ($left, $right) = @_; return ($left && $right) ? 1 : 0 },
+    ":LOR:"  => sub { my ($left, $right) = @_; return bool($left || $right) },
+    ":LAND:" => sub { my ($left, $right) = @_; return bool($left && $right) },
+    # Comparison
+    "<"      => sub { my ($left, $right) = @_;
+                      return bool(isstring($left, $right)
+                                ? ("$left" lt "$right")
+                                : (unsigned($left) < unsigned($right))) },
+    ">"      => sub { my ($left, $right) = @_;
+                      return bool(isstring($left, $right)
+                                ? ("$left" gt "$right")
+                                : (unsigned($left) > unsigned($right))) },
+    ">="     => sub { my ($left, $right) = @_;
+                      return bool(isstring($left, $right)
+                                ? ("$left" ge "$right")
+                                : (unsigned($left) >= unsigned($right))) },
+    "<="     => sub { my ($left, $right) = @_;
+                      return bool(isstring($left, $right)
+                                ? ("$left" le "$right")
+                                : (unsigned($left) <= unsigned($right))) },
+    "!="     => sub { my ($left, $right) = @_;
+                      return bool(isstring($left, $right)
+                                ? ("$left" ne "$right")
+                                : (unsigned($left) != unsigned($right))) },
+    "=="     => sub { my ($left, $right) = @_;
+                      return bool(isstring($left, $right)
+                                ? ("$left" eq "$right")
+                                : (unsigned($left) == unsigned($right))) },
     # String
-    ":LEFT:" => sub { my ($left, $right) = @_; return '"'. (signed($right) > 0 ? substr(unstr($left), 0, $right) : '') .'"' },
-    ":RIGHT:" => sub { my ($left, $right) = @_; return '"'. (signed($right) > 0 ? substr(unstr($left), -$right) : '') .'"' },
+    ":LEFT:" => sub { my ($left, $right) = @_; $right = signed($right); return '"'. ($right > 0 ? substr(unstr($left), 0, $right) : '') .'"' },
+    ":RIGHT:" => sub { my ($left, $right) = @_; $right = signed($right); return '"'. ($right > 0 ? substr(unstr($left), -$right) : '') .'"' },
     ":CC:"   => sub { my ($left, $right) = @_; return '"'. unstr($left) . unstr($right) .'"' },
     # FIXME: We don't support:
     #   ?symbol
@@ -191,7 +244,17 @@ our %operators_binary = (
     #   :ROL:
     # See: https://developer.arm.com/documentation/dui0801/g/Symbols--Literals--Expressions--and-Operators/Unary-operators?lang=en
 );
-our $operators_binary_re = "(?:" . (join '|', map { "\Q$_\E" } keys %operators_binary) . ")";
+# Aliases
+$operators_binary{'%'} = $operators_binary{':MOD:'};
+$operators_binary{'&'} = $operators_binary{':AND:'};
+$operators_binary{'|'} = $operators_binary{':OR:'};
+$operators_binary{'^'} = $operators_binary{':EOR:'};
+$operators_binary{'<<'} = $operators_binary{':SHL:'};
+$operators_binary{'>>'} = $operators_binary{':SHR:'};
+$operators_binary{'='} = $operators_binary{'=='};
+$operators_binary{'<>'} = $operators_binary{'!='};
+$operators_binary{'/='} = $operators_binary{'!='};
+our $operators_binary_re = "(?:" . (join '|', map { "\Q$_\E" } sort { length($b) cmp length($a) } keys %operators_binary) . ")";
 our %operators_monadic = (
     # Arithmetic
     "+"      => sub { my ($right) = @_; return (0+$right) & 0xFFFFFFFF },
