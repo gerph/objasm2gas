@@ -903,7 +903,13 @@ sub single_line_conv {
     {
         $cmd = '.space';
         # FIXME: Doesn't support the <expr>, <fill>, <fillsize> form
-        $values = evaluate($values);
+        my $trail;
+        ($values, $trail) = expression($values);
+        if ($trail ne '')
+        {
+            exit_error($ERR_SYNTAX, $context.
+                ": Trailing text '$trail' not recognised on $cmd");
+        }
         goto reconstruct;
     }
 
@@ -1251,8 +1257,13 @@ sub single_line_conv {
     }
     elsif ($cmd =~ /^SET([A|L|S])$/i) {
         my $var = $label;
-        my $val = evaluate($values);
         my $type = $1;
+        my ($val, $trail) = expression($values);
+        if ($trail)
+        {
+            exit_error($ERR_SYNTAX, $context.
+                ": Trailing text '$trail' not recognised on $cmd");
+        }
         my $v = set_variable($var, $val, $type);
         if ($v->{'scope'} eq 'G')
         {
@@ -1380,7 +1391,7 @@ sub single_line_conv {
     if ($line =~ m/^(\s*)\^(\s*)(.*?)(\s*\/\/.*)?$/) {
         my ($spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
         our $mapping_base;
-        if ($value =~ m/^(.*), ($regnames_re)/)
+        if ($value =~ m/^(.*),\s*($regnames_re)/)
         {
             $value = $1;
             $mapping_register = $2;
@@ -1389,7 +1400,13 @@ sub single_line_conv {
         {
             $mapping_register = undef;
         }
-        $mapping_base = evaluate($value);
+        my $trail;
+        ($mapping_base, $trail) = expression($value);
+        if ($trail)
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Trailing text '$trail' at the end of mapping definition");
+        }
         $line = '';
     }
     elsif ($line =~ m/^(\w+)(\s*)\#(\s*)(.*?)(\s*\/\/.*)?$/) {
@@ -1401,9 +1418,15 @@ sub single_line_conv {
                 ": Attempt to define field mapping for '$symbol' without setting up base ('^' not used)");
         }
         $comment //= '';
-        $mapping{$symbol} = [$mapping_base, $mapping_register];
+        my ($size, $trail) = expression($value);
+        if ($trail)
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Trailing text '$trail' at the end of field definition '$symbol'");
+        }
+        $mapping{$symbol} = [$mapping_base, $mapping_register, $size];
         $line = ".set $symbol, " . gas_number($mapping_base) . "$comment\n";
-        $mapping_base += evaluate($value);
+        $mapping_base += $size;
     }
 
     # ------ Conversion: references to field mappings ------
@@ -1795,15 +1818,15 @@ sub expression
             my $oct_lit = $1;
             $value = oct($oct_lit);
         }
-        elsif ($expr =~ s/^(\d+)//)
-        {
-            my $dec_lit = $1;
-            $value = $dec_lit + 0;
-        }
         elsif ($expr =~ s/^(?:&|0x)([\dA-Fa-f]+)//)
         {
             my $hex_lit = $1;
             $value = hex($hex_lit);
+        }
+        elsif ($expr =~ s/^(\d+)//)
+        {
+            my $dec_lit = $1;
+            $value = $dec_lit + 0;
         }
         elsif ($expr =~ s/^([A-Za-z_][A-Za-z0-9_]*)//)
         {
