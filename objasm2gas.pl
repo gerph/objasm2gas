@@ -682,15 +682,20 @@ sub expand_macro {
     my @valuelist;
     my $valueparse=$values;
 
+    #print "Expand macro args: $values\n";
     while ($valueparse ne '')
     {
         next if ($valueparse =~ s/^\s+//);
         if ($valueparse =~ s/^((?:"[^"]*"[^,]*)+?)\s*//)
         {
             # Quoted string.
-            # FIXME: Strip the quotes?
             #print "Quoted value '$1'\n";
-            push @valuelist, $1;
+            my ($val, $tail) = expression($1);
+            if ($val =~ /^"(.*)"$/)
+            {
+                $val = $1;
+            }
+            push @valuelist, $val;
         }
         elsif ($valueparse =~ s/^([^,\s]+)//)
         {
@@ -1792,7 +1797,6 @@ sub expression
     my ($expr) = @_;
     my $orig = $expr;
     our $context;
-    our %cmp_number;
     my $expr_debug = 0;
 
     # This is not going to be a proper parser for numeric expressions; it's going
