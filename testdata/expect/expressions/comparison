@@ -16,18 +16,10 @@
     .byte 0, 1
 
 // not 1>2
-    .if 0
-        .asciz "1>2"
-    .else
         .asciz "NOT 1>2"
-    .endif
 
 // 1<2
-    .if 1
         .asciz "1<2"
-    .else
-        .asciz "NOT 1<2"
-    .endif
 
 
     .end

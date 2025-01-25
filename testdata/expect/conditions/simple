@@ -1,16 +1,10 @@
 // Simple conditionals
 
-    .if 1
         .asciz "True"
-    .else
-        .asciz "False"
-    .endif
 
-    .if 1
         .asciz "True"
-    .else
-        .asciz "False"
-    .endif
+
+        .asciz "True"
 
     .end
 

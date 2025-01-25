@@ -12,4 +12,10 @@
         = "False", 0
     ENDIF
 
+    IF {FALSE}
+        = "False", 0
+    ELSE
+        = "True", 0
+    ENDIF
+
     END

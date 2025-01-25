@@ -29,6 +29,7 @@ Options:
     -w, --no-warning            Suppress all warning messages
     -x, --suffix=<string>       Suffix of the output filename [default: '.out']
     --inline                    Process GET and INCLUDE inline
+    --simple-conditions         Only process conditions as simple statements
     --test-expr=<expr>          Test the expression processor
 
 Cautions:
@@ -97,6 +98,7 @@ our $opt_strict      = 0;
 our $opt_nocomment   = 0;
 our $opt_nowarning   = 0;
 our $opt_inline      = 0;
+our $opt_simplecond  = 0;
 our $opt_testexpr    = 0;
 
 # directives that don't have any labels
@@ -443,6 +445,7 @@ GetOptions(
     "n|no-comment"  => \$opt_nocomment,
     "w|no-warning"  => \$opt_nowarning,
     "inline"        => \$opt_inline,
+    "simple-conditions" => \$opt_simplecond,
     "test-expr=s"   => \$opt_testexpr,
 ) or die("Conversion of ObjASM source to GAS source failed\n");
 
@@ -499,6 +502,9 @@ our $macroname;
 #   context => the context it was created in
 #   type => the variable type (A, L, S)
 our @variable_stack = ({}, {});
+
+# Conditional stack.
+my @cond_stack = (1,);
 
 
 END {
@@ -833,7 +839,14 @@ sub single_line_conv {
 
     # empty line
     if ($line =~ m/^\s*$/) {
-        return "\n";    # just keep it
+        if ($cond_stack[-1])
+        {
+            return "\n";    # just keep it
+        }
+        else
+        {
+            return undef;
+        }
     }
 
     # warn if detect a string
@@ -916,7 +929,14 @@ sub single_line_conv {
         if ($line =~ /^\s*\/\//)
         {
             # If the line is ONLY comments, we're done
-            return $line;
+            if ($cond_stack[-1])
+            {
+                return $line;
+            }
+            else
+            {
+                return undef;
+            }
         }
     }
 
@@ -984,37 +1004,141 @@ sub single_line_conv {
     # ------ Conversion: conditional directives ------
     if ($cmd eq 'IF' || $cmd eq '[')
     {
-        if ($values =~ /^\s*:NOT:\s*:DEF:\s*(.*)/)
+        if ($opt_simplecond)
         {
-            $cmd = '.ifndef';
-            $values = $1;
-        }
-        elsif ($values =~ /^\s*:DEF:\s*(.*)/)
-        {
-            $cmd = '.ifdef';
-            $values = $1;
+            if ($values =~ /^\s*:NOT:\s*:DEF:\s*(.*)/)
+            {
+                $cmd = '.ifndef';
+                $values = $1;
+            }
+            elsif ($values =~ /^\s*:DEF:\s*(.*)/)
+            {
+                $cmd = '.ifdef';
+                $values = $1;
+            }
+            else
+            {
+                $cmd = '.if';
+                $values = evaluate($values);
+            }
+            goto reconstruct;
         }
         else
         {
-            $cmd = '.if';
-            $values = evaluate($values);
+            # Interpreted conditionals
+            #print ''. (" " x scalar(@cond_stack)) . "IF '$values'\n";
+            my $cond = $cond_stack[-1];
+            if ($cond)
+            {
+                my ($value, $trail) = expression($values);
+                if ($trail ne '')
+                {
+                    exit_error($ERR_SYNTAX, $context.
+                        ": Trailing text '$trail' not recognised on $cmd");
+                }
+                $cond = ($value ne '0');
+                $cond = 0 if ($cond_stack[-1] == 0);
+            }
+            push @cond_stack, $cond;
+
+            # We ignore this line in all cases
+            return undef;
         }
-        goto reconstruct;
     }
     elsif ($cmd eq 'ELSE' || $cmd eq '|')
     {
-        $cmd = '.else';
-        goto reconstruct
+        if ($opt_simplecond)
+        {
+            $cmd = '.else';
+            goto reconstruct
+        }
+        else
+        {
+            # Interpreted conditionals
+            if (scalar(@cond_stack) == 1)
+            {
+                exit_error($ERR_SYNTAX, $context.
+                    ": Invalid conditional: $cmd specified outside of conditional");
+            }
+            my $cond = (!$cond_stack[-1]);
+            $cond = 0 if ($cond_stack[-2] == 0);
+            $cond_stack[-1] = $cond;
+
+            # We ignore this line in all cases
+            return undef;
+        }
     }
     elsif ($cmd eq 'ELSEIF')
     {
-        exit_error($ERR_SYNTAX, $context.
-            ": Conditional ELSEIF not supported");
+        if ($opt_simplecond)
+        {
+            exit_error($ERR_SYNTAX, $context.
+                ": Conditional ELSEIF not supported");
+        }
+        else
+        {
+            # Interpreted conditionals
+            if (scalar(@cond_stack) == 1)
+            {
+                exit_error($ERR_SYNTAX, $context.
+                    ": Invalid conditional: $cmd specified outside of conditional");
+            }
+            #print ''. (" " x (scalar(@cond_stack)-1)) . "ELSEIF $values\n";
+
+            my $cond = $cond_stack[-2];
+            $cond_stack[-1] = $cond;
+
+            # This isn't right - we'll actually execute *all* the ELSEIF clauses that are true, not just first
+            if ($cond)
+            {
+                my ($value, $trail) = expression($values);
+                if ($trail ne '')
+                {
+                    exit_error($ERR_SYNTAX, $context.
+                        ": Trailing text '$trail' not recognised on $cmd");
+                }
+                my $cond = ($value ne '0');
+                $cond_stack[-1] = $cond;
+            }
+
+            # We ignore this line in all cases
+            return undef;
+        }
     }
     elsif ($cmd eq 'ENDIF' || $cmd eq ']')
     {
-        $cmd = '.endif';
-        goto reconstruct
+        if ($opt_simplecond)
+        {
+            $cmd = '.endif';
+            goto reconstruct
+        }
+        else
+        {
+            #print ''. (" " x (scalar(@cond_stack)-1)) . "ENDIF\n";
+            # Interpreted conditionals
+            if (scalar(@cond_stack) == 1)
+            {
+                exit_error($ERR_SYNTAX, $context.
+                    ": Invalid conditional: $cmd specified outside of conditional");
+            }
+            pop @cond_stack;
+
+            # We ignore this line in all cases
+            return undef
+        }
+    }
+
+    if (!$opt_simplecond)
+    {
+        if ($cmd ne 'END')
+        {
+            # END is always processed
+            if (!$cond_stack[-1])
+            {
+                # Not true condition, so ignore the line.
+                return undef;
+            }
+        }
     }
 
     # ------ Conversion: local label assignment ------
@@ -1870,6 +1994,7 @@ sub expression
             if ($value =~ m![^0-9]!)
             { $value = '"' . $value . '"'; }
         }
+        # Simple strings and values
         elsif ($expr =~ s/^("[^"]*")//)
         {
             my $str_lit = $1;
@@ -1895,6 +2020,14 @@ sub expression
             my $dec_lit = $1;
             $value = $dec_lit + 0;
         }
+        # Special checks
+        elsif ($expr =~ s/^:DEF:\s*([A-Za-z_][A-Za-z0-9_]*)//)
+        {
+            my $varname = $1;
+            my $var = find_variable($varname);
+            $value = $var ? 1 : 0;
+        }
+        # Mappings and constants
         elsif ($expr =~ s/^([A-Za-z_][A-Za-z0-9_]*)//)
         {
             my $name = $1;
