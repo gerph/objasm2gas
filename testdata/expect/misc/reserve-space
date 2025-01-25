@@ -1,6 +1,6 @@
 // Reserving space
 
-            .section .text, "ax"
+            .section    .text, "ax"
 
 .set size, 25
 

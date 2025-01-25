@@ -1,6 +1,6 @@
 // Test some of the builtins
 
-        .section .text, "ax"
+        .section    .text, "ax"
 
 // AREA: (not objasm, armasm only)
         .asciz ".text"

@@ -1,5 +1,5 @@
 
-        .section .text.Test, "ax"
+        .section    .text.Test, "ax"
 
 // Was AUTOMATICALLY generated header, but now manually edited
 

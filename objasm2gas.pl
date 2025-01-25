@@ -1377,28 +1377,6 @@ sub single_line_conv {
         return undef;
     }
 
-    # ------ Conversion: labels ------
-    given ($line) {
-        # FIXME: This needs to be implemented properly.
-        # branch jump
-        when (m/^\s*B[A-Z]*\s+(%([FB]?)([AT]?)(\d+)(\w*))/i) {
-            my $label        = $1;
-            my $direction    = $2;
-            my $search_level = $3;
-            my $num_label    = $4;
-            my $scope        = $5;
-            ($search_level eq "")
-                or msg_warn(1, "$context".
-                ": Can't specify label's search level '$search_level' in GAS".
-                ", dropping");
-            ($scope eq "")
-                or msg_warn(1, "$context".
-                ": Can't specify label's scope '$scope' in GAS".
-                ", dropping");
-            $line =~ s/$label/$num_label$direction/;
-        }
-    }
-
     # ------ Conversion: functions ------
     if ($cmd eq 'PROC' or $cmd eq 'FUNCTION') {
         my $func_name = $label;
@@ -1466,8 +1444,8 @@ sub single_line_conv {
     }
 
     # ------ Conversion: sections ------
-    if ($line =~ m/^\s*AREA\s+\|*([.\w\$]+)\|*([^\/]*?)(\s*\/\/.*)?$/i) {
-
+    if ($cmd eq 'AREA' && ($values =~ /^\|*([.\w\$]+)\|*(.*)$/))
+    {
         my $sec_name = $1;
         my @options  = split /,/, $2;
 
@@ -1555,12 +1533,12 @@ sub single_line_conv {
         # Should the AREANAME be the section name, or the literal area they supplied?
         $builtins{'AREANAME'} = "$sec_name";
 
-        $line =~ s/^(\s*)AREA[^\/]+[^\/\s]/$1.section $sec_name, "$flags"$args/i;
+        $line = "${label}${lspcs}.section${cspcs}$sec_name, \"$flags\"$args${vspcs}${comment}";
 
-        my $indent = $1;
         if (defined($align)) {
-            $line .= "$indent.balign " . (2**$align) . "\n";
+            $line .= "\n${lspcs}.balign " . (2**$align);
         }
+        return $line;
     }
 
     # ------ Conversion: numeric literals ------

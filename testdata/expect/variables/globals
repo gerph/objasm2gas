@@ -1,7 +1,7 @@
 
 // Simple global assignments
 
-        .section .text, "ax"
+        .section    .text, "ax"
 
 // declare a string variable
         .global MESSAGE

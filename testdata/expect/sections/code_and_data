@@ -1,21 +1,21 @@
 
 // simple code region
-        .section .text, "ax"
+        .section    .text, "ax"
 
         MOV     pc, lr
 
 // C-linkable area (should just be .text)
-        .section .text, "ax"
+        .section    .text, "ax"
 
         MOV     pc, lr
 
 // C-linkable data area
-        .section .data, "aw", %progbits
+        .section    .data, "aw", %progbits
 
         .word     42
 
 // C-linkable readonly data
-        .section .rodata, "a", %progbits
+        .section    .rodata, "a", %progbits
 
         .asciz "Hello world"
 

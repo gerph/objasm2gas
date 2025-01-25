@@ -1,5 +1,5 @@
 
-        .section .text.Asm, "ax"
+        .section        .text.Asm, "ax"
 // Actually AArch64, but meh
 // Based on https://www.iconbar.com/news/uploaded/2023/advent/rooladvent_3.png
 // but actually using a system call to print a string.
