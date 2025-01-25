@@ -1365,6 +1365,49 @@ sub single_line_conv {
         return $line;
     }
 
+    # ------ Conversion: mappings ------
+    if ($cmd eq '^') {
+        our $mapping_base;
+        my $value = $values;
+        if ($values =~ m/^(.*),\s*($regnames_re)$/)
+        {
+            $value = $1;
+            $mapping_register = $2;
+        }
+        else
+        {
+            $mapping_register = undef;
+        }
+        my $trail;
+        ($mapping_base, $trail) = expression($value);
+        if ($trail)
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Trailing text '$trail' at the end of mapping definition");
+        }
+        return undef;
+    }
+    if ($cmd eq '#') {
+        our $mapping_base;
+        if (!defined $mapping_base)
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Attempt to define field mapping for '$label' without setting up base ('^' not used)");
+        }
+        my ($size, $trail) = expression($values);
+        if ($trail)
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Trailing text '$trail' at the end of field definition '$label'");
+        }
+        $mapping{$label} = [$mapping_base, $mapping_register, $size];
+        $cmd = ".set";
+        $values = "$label, " . gas_number($mapping_base);
+        $label = '';
+        $lspcs = ' ' x 8;
+        $mapping_base += $size;
+        goto reconstruct;
+    }
 
     # ------ Conversion: includes ------
     if ($opt_inline && ($cmd eq 'GET' or $cmd eq 'INCLUDE')) {
@@ -1557,47 +1600,6 @@ sub single_line_conv {
     # Expand numeric literals
     $line = expand_literals($line, "$context");
 
-    # ------ Conversion: mappings ------
-    if ($line =~ m/^(\s*)\^(\s*)(.*?)(\s*\/\/.*)?$/) {
-        my ($spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
-        our $mapping_base;
-        if ($value =~ m/^(.*),\s*($regnames_re)/)
-        {
-            $value = $1;
-            $mapping_register = $2;
-        }
-        else
-        {
-            $mapping_register = undef;
-        }
-        my $trail;
-        ($mapping_base, $trail) = expression($value);
-        if ($trail)
-        {
-            exit_error($ERR_SYNTAX, "$context".
-                ": Trailing text '$trail' at the end of mapping definition");
-        }
-        $line = '';
-    }
-    elsif ($line =~ m/^(\w+)(\s*)\#(\s*)(.*?)(\s*\/\/.*)?$/) {
-        my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
-        our $mapping_base;
-        if (!defined $mapping_base)
-        {
-            exit_error($ERR_SYNTAX, "$context".
-                ": Attempt to define field mapping for '$symbol' without setting up base ('^' not used)");
-        }
-        $comment //= '';
-        my ($size, $trail) = expression($value);
-        if ($trail)
-        {
-            exit_error($ERR_SYNTAX, "$context".
-                ": Trailing text '$trail' at the end of field definition '$symbol'");
-        }
-        $mapping{$symbol} = [$mapping_base, $mapping_register, $size];
-        $line = ".set $symbol, " . gas_number($mapping_base) . "$comment\n";
-        $mapping_base += $size;
-    }
 
     # ------ Conversion: references to field mappings ------
     if ($line =~ m/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/)
