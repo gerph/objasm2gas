@@ -13,7 +13,7 @@
         .word     14
         .word     15
 
-        .set here, 23
+.set here, 23
 
 // Mapping should be 24
         .byte 24, 0

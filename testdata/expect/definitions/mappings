@@ -3,12 +3,12 @@
 //
 
 // Without a register
-        .set Constant_0, 0
-        .set Constant_1, 1
-        .set Constant_5, 5
+.set Constant_0, 0
+.set Constant_1, 1
+.set Constant_5, 5
 
-        .set Large, 0x049000
-        .set Larger, 0x049004
+.set Large, 0x049000
+.set Larger, 0x049004
 
         .section .text.Example, "ax"
 

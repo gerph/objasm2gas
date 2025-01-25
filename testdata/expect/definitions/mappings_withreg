@@ -3,9 +3,9 @@
 //
 
 // With a register
-        .set Constant_0, 0
-        .set Constant_1, 1
-        .set Constant_5, 5
+.set Constant_0, 0
+.set Constant_1, 1
+.set Constant_5, 5
 
         .section .text.Example, "ax"
 

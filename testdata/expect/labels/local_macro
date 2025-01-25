@@ -16,7 +16,6 @@ L_myfunc_macro_HANG__local_10_2:
 L_myfunc_macro_HANG__local_30_2:
                                 // never used
 
-
 // This should be in the myfunc context and have an incremented sequence number
 Lmyfunc__local_20_3:
 

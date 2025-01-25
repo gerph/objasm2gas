@@ -580,6 +580,7 @@ sub process_file {
     $in_file = $filename;
     $linenum_input = 1;
     while (my $line = <$f_in>) {
+        chomp $line;
         $context = "$our_context$in_file:$linenum_input -> $out_file:$linenum_output";
         $linenum_input++;
         if ($opt_inline && $line =~ /^\s+END\s*$/)
@@ -590,7 +591,7 @@ sub process_file {
         my $outputline = single_line_conv($line);
         if (defined $outputline)
         {
-            print $f_out $outputline;
+            print $f_out "$outputline\n";
             my @nlines = ($outputline =~ m/\n/g);
             $linenum_output += scalar(@nlines);
         }
@@ -688,7 +689,7 @@ sub expand_macro {
     my @valuelist;
     my $valueparse=$values;
 
-    #print "Expand macro args: $values\n";
+    #print "Expand macro '$macroname' args: $values\n";
     while ($valueparse ne '')
     {
         next if ($valueparse =~ s/^\s+//);
@@ -809,12 +810,11 @@ sub expand_macro {
         my $outputline = single_line_conv($macroline);
         if (defined $outputline)
         {
-            print $f_out $outputline;
+            print $f_out "$outputline\n";
             my @nlines = ($outputline =~ m/\n/g);
             $linenum_output += scalar(@nlines);
         }
     }
-    print $f_out "\n";  # required by as
     $linenum_output += 1;
 
     my $macro_labels = pop @label_stack;
@@ -841,7 +841,7 @@ sub single_line_conv {
     if ($line =~ m/^\s*$/) {
         if ($cond_stack[-1])
         {
-            return "\n";    # just keep it
+            return "";    # just keep it
         }
         else
         {
@@ -867,7 +867,7 @@ sub single_line_conv {
         if ($macroname eq '1')
         {
             # This is the first line after the MACRO, which defines what the macro is.
-            if ($line =~ /^(?:(\$[a-zA-Z_]\w*))?\s*(\w*)\s+(.*?)(\/\/.*)?$/) {
+            if ($line =~ /^(?:(\$[a-zA-Z_]\w*))?\s*(\w+)\s*(.*?)(\/\/.*)?$/) {
                 my ($label, $name, $args, $comment) = ($1, $2, $3, $4);
                 $macroname = $name;
                 my @arglist = split /\s*,\s*/, $args;
@@ -900,6 +900,11 @@ sub single_line_conv {
                         'base_file' => $in_file,
                         'base_line' => $linenum_input + 1,  # Start *after* the definition line
                     };
+            }
+            else
+            {
+                msg_warn(1, "$context".
+                    ": Macro prototype is not recognised ($line)");
             }
         }
         else
@@ -950,7 +955,8 @@ sub single_line_conv {
     my $comment;
 
     # FIXME: This parse doesn't handle strings with // in.
-    if ($line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/)
+    if ($line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/ ||
+        $line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+)?)?()()()()(\s*)(\/\/.*)?$/)
     {
         $label=$1;
         $lspcs=$2;
@@ -959,7 +965,7 @@ sub single_line_conv {
         $values=$5;
         $vspcs=$6;
         $comment=$7 // '';
-        if (defined $macros{$cmd})
+        if ($cmd && defined $macros{$cmd})
         {
             # Macro expansion requested.
             #print "Macro expansion '$cmd' of '$label', '$values'\n";
@@ -979,7 +985,6 @@ sub single_line_conv {
     }
     else
     {
-        chomp $line;
         msg_warn(1, $context.
             ": Unrecognised line format '$line'");
         return undef;
@@ -1259,8 +1264,8 @@ sub single_line_conv {
             return undef;
         }
         $label_stack[-1]->{'rout'} = $label;
-        $line = "$label: $lspcs$cspcs$vspcs$comment\n";
-        $line =~ s/:\s*\n/:\n/;
+        $line = "$label: $lspcs$cspcs$vspcs$comment";
+        $line =~ s/:\s*$/:/;
         return $line;
     }
 
@@ -1281,7 +1286,9 @@ sub single_line_conv {
             #print "Got back $newline\n";
             if (defined $newline)
             {
-                return "$label:\n$newline";
+                $line = "$label:\n$newline";
+                $line =~ s/\s+$//;
+                return $line;
             }
         }
         goto reconstruct;
@@ -1361,7 +1368,7 @@ sub single_line_conv {
 
         my $unlabelled = 0;
         my $sprefix = (' ' x length($label)) . $lspcs;
-        $line = join "", map { $unlabelled++ ? "$sprefix$_\n" : "$label$lspcs$_\n" } @lines;
+        $line = join "\n", map { $unlabelled++ ? "$sprefix$_" : "$label$lspcs$_" } @lines;
         return $line;
     }
 
@@ -1401,12 +1408,20 @@ sub single_line_conv {
                 ": Trailing text '$trail' at the end of field definition '$label'");
         }
         $mapping{$label} = [$mapping_base, $mapping_register, $size];
-        $cmd = ".set";
-        $values = "$label, " . gas_number($mapping_base);
-        $label = '';
-        $lspcs = ' ' x 8;
+        $comment //= '';
+        $cspcs = '' if (!$comment);
+        $line = ".set $label, " . gas_number($mapping_base) . $cspcs . $comment;
         $mapping_base += $size;
-        goto reconstruct;
+        return $line;
+    }
+
+    # ------ Conversion: constants ------
+    if ($cmd eq '*' || $cmd eq 'EQU') {
+        $constant{$label} = evaluate($values);
+        $comment //= '';
+        $cspcs = '' if (!$comment);
+        $line = ".set $label, " . gas_number($constant{$label}) . $cspcs . $comment;
+        return $line;
     }
 
     # ------ Conversion: includes ------
@@ -1427,15 +1442,15 @@ sub single_line_conv {
             push @symbols, $func_name;
             if ($values)
             {
-                $line = ".type $label, \"function\"$values\n$label:$cspcs$comment\n";
+                $line = ".type $label, \"function\"$values\n$label:$cspcs$comment";
             }
             else
             {
-                $line = "$label:$cspcs$comment\n";
+                $line = "$label:$cspcs$comment";
             }
         }
         else {
-            $line = ".func $label\n$label:$cspcs$comment\n";
+            $line = ".func $label\n$label:$cspcs$comment";
         }
         return $line;
     }
@@ -1443,10 +1458,10 @@ sub single_line_conv {
         if ($opt_compatible) {
             my $func_name = pop @symbols;
             my $func_end  = ".L$func_name"."_end";
-            $line = "$func_end:${lspcs}\n$1.size $func_name, $func_end-$func_name$cspcs$comment\n";
+            $line = "$func_end:${lspcs}\n$1.size $func_name, $func_end-$func_name$cspcs$comment";
         }
         else {
-            $line = ".endfunc$cspcs$comment\n";
+            $line = ".endfunc$cspcs$comment";
         }
     }
 
@@ -1628,15 +1643,6 @@ sub single_line_conv {
     }
 
 
-    # ------ Conversion: constants ------
-    if ($line =~ m/^(\w+)(\s*)(?:\*|EQU)(\s*)(.*?)(\s*\/\/.*)?$/) {
-        my ($symbol, $spaces, $spaces2, $value, $comment) = ($1, $2, $3, $4, $5);
-        $constant{$symbol} = evaluate($value);
-        $comment //= '';
-        $line = ".set $symbol, " . gas_number($value) . "$comment\n";
-    }
-
-
     # ------ Conversion: misc directives ------
     # weak declaration
     if ($line =~ m/(EXPORT|GLOBAL|IMPORT|EXTERN)\s+\w+.+\[\s*WEAK\s*\]/i) {
@@ -1686,11 +1692,7 @@ reconstruct:
         $label = "$label:\n";
     }
     $line = "$label$lspcs$cmd$cspcs$values$vspcs$comment";
-    $line =~ s/ +\n?$//;
-    if ($line !~ /\n$/)
-    {
-        $line .= "\n";
-    }
+    $line =~ s/\s*$//;
     return $line;
 }
 

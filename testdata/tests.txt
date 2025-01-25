@@ -170,6 +170,9 @@ Args: macros/args_2
 Test: Real world signature
 Args: macros/signature
 
+Test: SWI alias
+Args: macros/swi
+
 
 Group: Including files
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --inline
