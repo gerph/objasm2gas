@@ -31,6 +31,9 @@ Options:
     --inline                    Process GET and INCLUDE inline
     --simple-conditions         Only process conditions as simple statements
     --test-expr=<expr>          Test the expression processor
+    --gas=<as-executable>       GNU Assembler to invoke to create ELF file, after
+                                conversion
+    --bin                       When used with --gas, create a binary file
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
@@ -100,6 +103,8 @@ our $opt_nowarning   = 0;
 our $opt_inline      = 0;
 our $opt_simplecond  = 0;
 our $opt_testexpr    = 0;
+our $opt_gastool     = undef;
+our $opt_gasbin      = 0;
 
 # directives that don't have any labels
 our %cmd_withoutlabel = map { $_ => 1  } (
@@ -447,16 +452,18 @@ GetOptions(
     "inline"        => \$opt_inline,
     "simple-conditions" => \$opt_simplecond,
     "test-expr=s"   => \$opt_testexpr,
+    "gas=s"         => \$opt_gastool,
+    "bin"           => \$opt_gasbin,
 ) or die("Conversion of ObjASM source to GAS source failed\n");
 
 @input_files = @ARGV;
 
 # validate input
-if (@input_files == 0 && !$opt_testexpr) {
+if (scalar(@input_files) == 0 && !$opt_testexpr) {
     exit_error($ERR_ARGV, "$0:".__LINE__.
         ": No input file");
 }
-elsif (@output_files > 0 && $#input_files != $#output_files && !$opt_testexpr) {
+elsif (scalar(@output_files) > 0 && $#input_files != $#output_files && !$opt_testexpr) {
     exit_error($ERR_ARGV, "$0:".__LINE__.
         ": Input and output files must match one-to-one");
 }
@@ -466,7 +473,7 @@ elsif ($output_suffix !~ /^\.*\w+$/ && !$opt_testexpr) {
 }
 
 # pair input & output files
-if (@output_files == 0 && !$opt_testexpr) {
+if (scalar(@output_files) == 0 && !$opt_testexpr) {
     @output_files = map {"$_$output_suffix"} @input_files;
 }
 my %in_out_files;
@@ -523,16 +530,27 @@ foreach (keys %in_out_files) {
     our $out_file = $in_out_files{$_};
     our $linenum_output  = 1;
     our $context;
+    my $elf_file = undef;
 
     our $f_out;
     if ($out_file eq '-')
     {
+        if ($opt_gastool)
+        {
+            exit_error($ERR_SYNTAX, "$0:".__LINE__.": Cannot write to stdout when assembling output")
+        }
+
         # Write to the stdout stream
         open($f_out, ">&", STDOUT)
             or exit_error($ERR_IO, "$0:".__LINE__.": <STDOUT>: $!");
     }
     else
     {
+        if ($opt_gastool)
+        {
+            $elf_file = $out_file;
+            $out_file = "$in_file.gas";
+        }
         open($f_out, ">", $out_file)
             or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
         $writing = $out_file;
@@ -545,6 +563,14 @@ foreach (keys %in_out_files) {
 
     close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
     close $f_out or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+
+    if ($opt_gastool && $out_file ne '-')
+    {
+        assemble_file($opt_gastool, $out_file, $elf_file);
+        # If we were successful, remove the temporary file
+        unlink($out_file);
+    }
+
     $writing = undef;
 }
 
@@ -555,6 +581,50 @@ if ($opt_testexpr)
     print "Test expression: '$opt_testexpr'\n";
     print "Gave: '$value'\n";
     print "Tail: '$tail'\n";
+}
+
+sub assemble_file
+{
+    my ($gas, $file, $output) = @_;
+    my $elfoutput = $output;
+    my $binoutput;
+
+    if ($opt_gasbin)
+    {
+        # If they asked for a binary, then we replace the elf with a temporary file.
+        $binoutput = $output;
+        $elfoutput = "tmp-gas-elf.$$";
+    }
+
+    my $cmd = "$gas $file -o $elfoutput";
+    msg_info("Assembling with: $cmd");
+
+    if (system($cmd))
+    {
+        unlink $elfoutput;
+        exit_error($ERR_IO, "$0:".__LINE__.": $output: Failed to assemble with GNU as");
+    }
+
+    if ($binoutput)
+    {
+        # after assembling the ELF they want to link as a binary.
+        my $objcopy = $gas;
+        if ($objcopy =~ s/as$/objcopy/)
+        {}
+        else
+        {
+            unlink $elfoutput;
+            exit_error($ERR_IO, "$0:".__LINE__.": $output: Cannot infer 'objcopy' command");
+        }
+        $cmd = "$objcopy -O binary $elfoutput $binoutput";
+        msg_info("Linking with: $cmd");
+        if (system($cmd))
+        {
+            unlink $elfoutput;
+            exit_error($ERR_IO, "$0:".__LINE__.": $output: Failed to link into a binary");
+        }
+        unlink $elfoutput;
+    }
 }
 
 
