@@ -34,6 +34,7 @@ Options:
     --gas=<as-executable>       GNU Assembler to invoke to create ELF file, after
                                 conversion
     --bin                       When used with --gas, create a binary file
+    --predefine=<statement>     Pre-execute a SETA, SETL or SETS directive.
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
@@ -438,6 +439,16 @@ my @input_files     = ();
 my @output_files    = ();
 my $output_suffix   = '.out';
 
+# The variables are set with SET[ALS].
+# The stack contains the global variables at the top,
+# with local entries below that.
+# Each set of entries is a dictionary containing the variable names.
+# The value of each entry is a dictionary containing:
+#   value => the value of the variable
+#   context => the context it was created in
+#   type => the variable type (A, L, S)
+our @variable_stack = ({}, {});
+
 GetOptions(
     "output=s"      => \@output_files,
     "x|suffix=s"    => \$output_suffix,
@@ -454,6 +465,24 @@ GetOptions(
     "test-expr=s"   => \$opt_testexpr,
     "gas=s"         => \$opt_gastool,
     "bin"           => \$opt_gasbin,
+    "predefine=s"   => sub {
+            my ($switch, $arg) = @_;
+            if ($arg =~ /^(\w+)\s+SET([ALS])\s+(.*)$/)
+            {
+                my ($var, $type, $values) = ($1, $2, $3);
+                my ($val, $trail) = expression($values);
+                if ($trail)
+                {
+                    exit_error($ERR_SYNTAX, "Trailing text '$trail' not recognised on predefine '$arg'");
+                }
+                declare_variable($var, 'G', $type);
+                set_variable($var, $val, $type);
+            }
+            else
+            {
+                exit_error($ERR_SYNTAX, "Unrecognised predefine: '$arg'");
+            }
+        }
 ) or die("Conversion of ObjASM source to GAS source failed\n");
 
 @input_files = @ARGV;
@@ -499,16 +528,6 @@ my %mapping             = ();
 my %constant            = ();
 our %macros;
 our $macroname;
-
-# The variables are set with SET[ALS].
-# The stack contains the global variables at the top,
-# with local entries below that.
-# Each set of entries is a dictionary containing the variable names.
-# The value of each entry is a dictionary containing:
-#   value => the value of the variable
-#   context => the context it was created in
-#   type => the variable type (A, L, S)
-our @variable_stack = ({}, {});
 
 # Conditional stack.
 my @cond_stack = (1,);

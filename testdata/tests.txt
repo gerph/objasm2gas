@@ -105,8 +105,16 @@ Text:Matches: expect/$ARG1
 Test: Builtins
 Args: variables/builtins
 
-Test: Builtins
+Test: Globals
 Args: variables/globals
+
+Test: Predefine
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --predefine "VARIABLE SETS \"hello\""
+Args: variables/predefine
+
+Test: Predefine x 2
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --predefine "VARIABLE SETS \"hello\"" --predefine "SECOND SETS \"there\""
+Args: variables/predefine2
 
 
 Group: Expressions
