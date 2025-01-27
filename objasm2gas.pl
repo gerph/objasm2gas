@@ -20,7 +20,7 @@ Usage: $toolname [<options>] <file1> [<file2>...]
 Options:
     -c, --compatible            Keeps compatibility with armclang assembler
     -h, --help                  Show this help text
-    -i, --verbose               Show a message on every non-trivial conversion
+        --verbose               Show a message on every non-trivial conversion
     -n, --no-comment            Discard all the comments in output
     -o, --output=<file>         Specify the output filename
     -r, --return-code           Print return code definitions
@@ -28,13 +28,14 @@ Options:
     -v, --version               Show version info
     -w, --no-warning            Suppress all warning messages
     -x, --suffix=<string>       Suffix of the output filename [default: '.out']
-    --inline                    Process GET and INCLUDE inline
-    --simple-conditions         Only process conditions as simple statements
-    --test-expr=<expr>          Test the expression processor
-    --gas=<as-executable>       GNU Assembler to invoke to create ELF file, after
+        --inline                Process GET and INCLUDE inline
+        --simple-conditions     Only process conditions as simple statements
+        --test-expr=<expr>      Test the expression processor
+        --gas=<as-executable>   GNU Assembler to invoke to create ELF file, after
                                 conversion
-    --bin                       When used with --gas, create a binary file
-    --predefine=<statement>     Pre-execute a SETA, SETL or SETS directive.
+        --bin                   When used with --gas, create a binary file
+        --predefine=<statement> Pre-execute a SETA, SETL or SETS directive.
+    -i <paths>                  Comma separated list of paths to include
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
@@ -300,7 +301,8 @@ our %misc_op = (
     "RN"        =>  ".req",
     "QN"        =>  ".qn",
     "DN"        =>  ".dn",
-    "ENTRY"     =>  ""
+    "ENTRY"     =>  "",
+    "SUBT"      =>  "//",
 );
 our $misc_op_re = "(?:" . (join "|", keys %misc_op) . ")";
 
@@ -439,6 +441,9 @@ my @input_files     = ();
 my @output_files    = ();
 my $output_suffix   = '.out';
 
+# Paths to search for files (in native format)
+our @include_paths  = ('.');
+
 # The variables are set with SET[ALS].
 # The stack contains the global variables at the top,
 # with local entries below that.
@@ -456,7 +461,7 @@ GetOptions(
     "return-code"   => sub { print $rvalmsg; exit },
     "v|version"     => sub { print "$ver\n"; exit },
     "compatible"    => \$opt_compatible,
-    "i|verbose"     => \$opt_verbose,
+    "verbose"       => \$opt_verbose,
     "s|strict"      => \$opt_strict,
     "n|no-comment"  => \$opt_nocomment,
     "w|no-warning"  => \$opt_nowarning,
@@ -482,7 +487,30 @@ GetOptions(
             {
                 exit_error($ERR_SYNTAX, "Unrecognised predefine: '$arg'");
             }
-        }
+        },
+    "i|include=s"   => sub {
+            my ($switch, $arg) = @_;
+            # Ensure that the paths are passed in with an extension
+            for my $path (split /,/, $arg)
+            {
+                my $exp = expand_paths($path);
+                if (!defined $exp)
+                {
+                    # Referred to a RISC OS variable but none set; skip.
+                    next;
+                }
+                if (scalar(@$exp) == 0)
+                {
+                    # There wasn't any path present, so just append raw
+                    push @include_paths, $path;
+                }
+                else
+                {
+                    # Multiple paths present, so append them all
+                    push @include_paths, @$exp;
+                }
+            }
+        },
 ) or die("Conversion of ObjASM source to GAS source failed\n");
 
 @input_files = @ARGV;
@@ -692,67 +720,170 @@ sub process_file {
 }
 
 
+sub expand_paths {
+    my ($filename) = @_;
+
+    my @paths;
+
+    # Expand the filename given to multiple path
+    if ($filename =~ /^([a-zA-Z][a-zA-Z0-9_]*):(.*)$/ ||
+        $filename =~ /^<([a-zA-Z][a-zA-Z0-9_]*\$[Dd][Ii][Rr])>(?:\.(.*))?$/)
+    {
+        # This is a RISC OS style path/dir variable.
+        my $pathvar = $1;
+        my $suffix = $2 // '';
+        if ($pathvar =~ /\$/)
+        {
+            # This is actually a RISC OS directory variable
+            $pathvar =~ s/\$/_/;
+            my $val = $ENV{uc($pathvar)};
+            if (!defined $val)
+            {
+                return undef;
+            }
+            @paths = ($val);
+        }
+        else
+        {
+            my $val = $ENV{uc($pathvar)};
+            if (!defined $val)
+            {
+                return undef;
+            }
+
+            @paths = split /,/, $val;
+        }
+
+        $suffix =~ s/^[\.\/]+//;
+        # We now have a list of paths to search, and a suffix path
+        # We need the suffix path to be in host format so that we can add
+        # to the paths
+        if ($suffix =~ /\./)
+        {
+            $suffix =~ s!\.!/!g;
+        }
+        @paths = map { my $path = "$_/$suffix/";
+                    $path =~ s!//+!/!g;
+                    $path;
+                 } @paths;
+        @paths = grep { -d $_ } @paths;
+    }
+    return \@paths;
+}
+
+
 sub resolve_filename {
     my ($filename) = @_;
     our $in_file;
-    #print "Resolving: $filename\n";
+    my $debug_filename = 0;
+    print "Resolving: $filename\n" if ($debug_filename);
     return $filename if (-f $filename);
 
-    my $newfilename;
-    my $basedir;
-
-    # Apply the filename to the relative location of the current source file.
-    $basedir = $in_file;
-    $basedir =~ s/[^\/]+$//;   # Trim leafname
-    if ($basedir ne '')
+    my @paths = @include_paths;
+    if ($filename =~ /^([a-zA-Z][a-zA-Z0-9_]*):(.*)$/ ||
+        $filename =~ /^<([a-zA-Z][a-zA-Z0-9_]*\$[Dd][Ii][Rr])>(?:\.(.*))?$/)
     {
-        $newfilename = "$basedir$filename";
-        return $newfilename if (-f $newfilename);
+        # This is a RISC OS style path/dir variable.
+        my $pathvar = $1;
+        my $suffix = $2 // '';
+
+        my $pathref = expand_paths($pathvar);
+        if (!defined $pathref)
+        {
+            exit_error($ERR_IO, "$0:".__LINE__.": $filename: Cannot expand RISC OS path/directory variables")
+        }
+        @paths = @$pathref;
+        $filename = $suffix;
+        # Remove any leading . or /.
+        $filename =~ s/^[\/\.]//;
+    }
+    print "Resolving against paths: ". (join ", ",@paths) ."\n" if ($debug_filename);
+
+    for my $pathdir (@paths)
+    {
+        my $newfilename;
+        my $basedir;
+        my $path = $pathdir;
+        if ($path eq '.' || $path eq '@' || $path eq '')
+        {
+            $path = '';
+        }
+        else
+        {
+            $path =~ s!([^/])$!$1/!;
+        }
+        print "Path prefix: $path\n" if ($debug_filename);
+
+        if ($filename =~ m!^/! && $pathdir ne '')
+        {
+            # If this is an explicit path and the path is rooted, we can skip this.
+            next;
+        }
+
+        if ($pathdir ne '')
+        {
+            $newfilename = "$path$filename";
+            print "  Trying $newfilename\n" if ($debug_filename);
+            return $newfilename if (-f $newfilename);
+        }
+
+        # Apply the filename to the relative location of the current source file.
+        $basedir = $in_file;
+        $basedir =~ s/[^\/]+$//;   # Trim leafname
+        if ($basedir ne '')
+        {
+            $newfilename = "$path$basedir$filename";
+            print "  Trying $newfilename\n" if ($debug_filename);
+            return $newfilename if (-f $newfilename);
+        }
+
+        # If the base directory is in unix form of the RISC OS extensions, strip it.
+        # Ie if the source file was <dirs>/s/<leaf> the base directory is <dirs>
+        if ($basedir =~ /(^|.*\/)($extensions_dir_re)\/?$/)
+        {
+            $basedir = $1;
+        }
+
+        # We'll try to apply the file that was supplied again
+        if ($basedir ne '')
+        {
+            $newfilename = "$path$basedir$filename";
+            return $newfilename if (-f $newfilename);
+        }
+
+        # Now let's try applying the filename given as a RISC OS style filename
+        my $unixised = $filename;
+        #print "Unixised: $unixised\n";
+        #print "Basedir: $basedir\n";
+        # Convert (<dirs>.)?s.<leaf> to <dirs>/s/<leaf>
+        if ($unixised =~ /(^|.*\.)($extensions_dir_re)\.([^\.]+)$/)
+        {
+            $unixised =~ tr!/.!./!;
+            $newfilename = "$path$basedir$unixised";
+            print "  Trying $newfilename\n" if ($debug_filename);
+            return $newfilename if (-f $newfilename);
+        }
+
+        # Let's try it with the names transformed
+        # For example convert hdr.foo to foo.hdr
+        if ($unixised =~ /(^|.*\/)($extensions_dir_re)\/([^\/]+)$/)
+        {
+            my $newfilename = "$path$basedir$1$3.$2";
+            print "  Trying $newfilename\n" if ($debug_filename);
+            return $newfilename if (-f $newfilename);
+        }
+
+        # Try it the other way around.
+        # If they gave us foo.hdr check this as hdr/foo.
+        if ($unixised =~ /(^|.*\/)([^\.]+)\.($extensions_dir_re)$/)
+        {
+            my $newfilename = "$path$basedir$1$3/$2";
+            print "  Trying $newfilename\n" if ($debug_filename);
+            return $newfilename if (-f $newfilename);
+        }
     }
 
-    # If the base directory is in unix form of the RISC OS extensions, strip it.
-    # Ie if the source file was <dirs>/s/<leaf> the base directory is <dirs>
-    if ($basedir =~ /(^|.*\/)($extensions_dir_re)\/?$/)
-    {
-        $basedir = $1;
-    }
-
-    # We'll try to apply the file that was supplied again
-    if ($basedir ne '')
-    {
-        $newfilename = "$basedir$filename";
-        return $newfilename if (-f $newfilename);
-    }
-
-    # Now let's try applying the filename given as a RISC OS style filename
-    my $unixised = $filename;
-    #print "Unixised: $unixised\n";
-    #print "Basedir: $basedir\n";
-    # Convert (<dirs>.)?s.<leaf> to <dirs>/s/<leaf>
-    if ($unixised =~ /(^|.*\.)($extensions_dir_re)\.([^\.]+)$/)
-    {
-        $unixised =~ tr!/.!./!;
-        $newfilename = "$basedir$unixised";
-        return $newfilename if (-f $newfilename);
-    }
-
-    # Let's try it with the names transformed
-    # For example convert hdr.foo to foo.hdr
-    if ($unixised =~ /(^|.*\/)($extensions_dir_re)\/([^\/]+)$/)
-    {
-        my $newfilename = "$basedir$1$3.$2";
-        return $newfilename if (-f $newfilename);
-    }
-
-    # Try it the other way around.
-    # If they gave us foo.hdr check this as hdr/foo.
-    if ($unixised =~ /(^|.*\/)([^\.]+)\.($extensions_dir_re)$/)
-    {
-        my $newfilename = "$basedir$1$3/$2";
-        return $newfilename if (-f $newfilename);
-    }
-
-    exit_error($ERR_IO, "$0:".__LINE__.": $filename: Cannot find file")
+    exit_error($ERR_IO, "$0:".__LINE__.": $filename: Cannot find file (searched paths: " . (join ", ", @paths) . ")");
 }
 
 
