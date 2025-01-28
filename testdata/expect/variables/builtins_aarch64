@@ -1,0 +1,28 @@
+// Test some of the builtins
+
+        .section    .text, "ax"
+
+// AREA: (not objasm, armasm only)
+        .asciz ".text"
+
+// Filename (not objasm, armasm only)
+        .asciz "objasm/variables/builtins_aarch64.s"
+
+// Line number (twice, to see it change) (not objasm, armasm only)
+        .balign
+        .word     14
+        .word     15
+
+.set here, 23
+
+// Mapping should be 24
+        .byte 24, 0
+
+// Config should be 32
+        .byte 64, 0
+
+// Architecture
+        .byte 7, 0
+
+        .end
+
