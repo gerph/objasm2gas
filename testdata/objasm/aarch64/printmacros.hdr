@@ -1,0 +1,45 @@
+
+OS_WriteC * 0                   //  &00
+OS_WriteS * 1                   //  &01
+OS_Write0 * 2                   //  &02
+OS_NewLine * 3                  //  &03
+
+        MACRO
+        SWI     $swi
+        MOV     x10, #$swi
+        SVC     #0
+
+        MACRO
+$label  PrintLine   $msg
+$label  STP     x0, x10, [sp, #-16]!
+        ADR     x0, %FT10
+        SWI     OS_Write0
+        SWI     OS_NewLine
+        LDP     x0, x10, [sp], #16
+        B       %FT20
+10
+        = "$msg", 0
+        ALIGN
+20
+        MEND
+
+        MACRO
+$label  PrintMessage $msg
+$label  STP     x0, x10, [sp, #-16]!
+        ADR     x0, %FT10
+        SWI     OS_Write0
+        LDP     x0, x10, [sp], #16
+        B       %FT20
+10
+        = "$msg", 0
+        ALIGN
+20
+        MEND
+
+        MACRO
+$label  PrintString $reg
+        STP     x0, x10, [sp, #-16]!
+        MOV     x0, $reg
+        SWI     OS_Write0
+        LDP     x0, x10, [sp], #16
+        MEND

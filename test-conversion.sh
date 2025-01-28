@@ -37,7 +37,11 @@ if [[ "$output" != '' ]] ; then
         exit 1
     fi
 
-    AS="${AS:-arm-cortexa8_neon-linux-gnueabihf-as}"
+    if [[ "$output" =~ aarch64 ]] ; then
+        echo "Skipping AArch64 assembly"
+    else
+        AS="${AS:-arm-cortexa8_neon-linux-gnueabihf-as}"
 
-    $AS "$output" -o /tmp/dummy
+        $AS "$output" -o /tmp/dummy
+    fi
 fi

@@ -192,3 +192,12 @@ Args: includes/get_file
 
 Test: Real world example of GET
 Args: includes/hello_world_pp
+
+
+Group: AArch64
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --inline --64
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Hello world in AArch64
+Args: aarch64/hello_world

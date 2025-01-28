@@ -9,7 +9,7 @@ use warnings;
 use feature ":5.14";
 no warnings qw(experimental);
 no warnings qw(portable);
-use Getopt::Long;
+use Getopt::Long qw(:config no_ignore_case bundling);
 
 my $toolname = 'objasm2gas';
 my $ver = '1.1';
@@ -20,12 +20,12 @@ Usage: $toolname [<options>] <file1> [<file2>...]
 Options:
     -c, --compatible            Keeps compatibility with armclang assembler
     -h, --help                  Show this help text
-        --verbose               Show a message on every non-trivial conversion
+    -v, --verbose               Show a message on every non-trivial conversion
     -n, --no-comment            Discard all the comments in output
     -o, --output=<file>         Specify the output filename
     -r, --return-code           Print return code definitions
     -s, --strict                Error on directives that have no equivalent counterpart
-    -v, --version               Show version info
+    -V, --version               Show version info
     -w, --no-warning            Suppress all warning messages
     -x, --suffix=<string>       Suffix of the output filename [default: '.out']
         --inline                Process GET and INCLUDE inline
@@ -36,6 +36,8 @@ Options:
         --bin                   When used with --gas, create a binary file
         --predefine=<statement> Pre-execute a SETA, SETL or SETS directive.
     -i <paths>                  Comma separated list of paths to include
+    --32                        Select 32bit mode
+    --64                        Select 64bit mode
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
@@ -176,7 +178,7 @@ sub isstring
 {
     for my $arg (@_)
     {
-        if ("$arg" =~ /[^0-9\-]/)
+        if ($arg =~ /[^0-9\-]/ || $arg eq '')
         {
             return 1;
         }
@@ -243,7 +245,6 @@ our %operators_binary = (
     #   ?symbol
     #   :BASE:
     #   :INDEX:
-    #   :DEF:
     #   :LNOT:
     #   :RCONST:
     #   :CC_ENCODING:
@@ -340,7 +341,7 @@ our %builtins = (
     'ARCHITECTURE' => '7',          # Might be a lie.
     'AREANAME' => 'NONE',           # No current area initially
     'ARMASM_VERSION' => 600000,     # Absolutely a lie
-    'CODESIZE' => 32,               # alias for CONFIG
+    'CODESIZE' => sub { our %builtins; return $builtins{'CONFIG'} },   # alias for CONFIG
     'CONFIG' => 32,                 # Need to update this from CLI.
     'COMMANDLINE' => '',            # No point in mapping this?
     'CPU' => 'Generic ARM',         # We'll just give it a generic name
@@ -373,7 +374,7 @@ our %builtins = (
     'FALSE' => 0,
 
     # Target options
-    'TARGET_ARCH_AARCH32' => 0,     # Might be a lie
+    'TARGET_ARCH_AARCH32' => 1,     # Might be a lie
     'TARGET_ARCH_AARCH64' => 0,     # Might be a lie
     'TARGET_ARCH_ARM' => 8,         # Might be a lie
     'TARGET_ARCH_THUMB' => 5,       # Might be a lie
@@ -393,15 +394,59 @@ our %cmp_number = (
 );
 
 # Names of all the general purpose registers we can use
-our @regnames = (
+our @regnames32 = (
     (map { "r$_" } (0..15)),
     'sp',
     'lr',
     'pc'
 );
+our @regnames64 = (
+    (map { "x$_" } (0..30)),
+    (map { "w$_" } (0..30)),
+    'sp',
+    'wsp',
+    'xlr',
+    'wlr',
+    'xzr',
+    'wzr',
+    'pc'
+);
 
 # Regular expression to match any of the registers
-our $regnames_re = "(?:" . (join "|", sort { length($a) <=> length($b) } @regnames) . ")";
+our $regnames32_re = "(?:" . (join "|", sort { length($a) <=> length($b) } @regnames32) . ")";
+our $regnames64_re = "(?:" . (join "|", sort { length($a) <=> length($b) } @regnames64) . ")";
+
+# Current regnames
+our @regnames;
+our $regnames_re;
+
+# Configuration for the bitness
+sub set_config {
+    my ($bitness) = @_;
+    our @regnames;
+    our $regnames_re;
+    if ($bitness == 64)
+    {
+        our @regnames64;
+        our $regnames64_re;
+        @regnames = @regnames64;
+        $regnames_re = $regnames64_re;
+        $builtins{'TARGET_ARCH_AARCH64'} = 1;
+        $builtins{'TARGET_ARCH_AARCH32'} = 0;
+        $builtins{'CONFIG'} = 64;
+    }
+    else
+    {
+        our @regnames32;
+        our $regnames32_re;
+        @regnames = @regnames32;
+        $regnames_re = $regnames32_re;
+        $builtins{'TARGET_ARCH_AARCH64'} = 0;
+        $builtins{'TARGET_ARCH_AARCH32'} = 1;
+        $builtins{'CONFIG'} = 32;
+    }
+}
+
 
 # RISC OS extensions that we transform
 my $extensions_dir_re = "s|hdr|c|h|cmhg|s_c|o|aof|bin|x";
@@ -454,14 +499,17 @@ our @include_paths  = ('.');
 #   type => the variable type (A, L, S)
 our @variable_stack = ({}, {});
 
+# Default config
+set_config(32);
+
 GetOptions(
-    "output=s"      => \@output_files,
+    "o|output=s"    => \@output_files,
     "x|suffix=s"    => \$output_suffix,
-    "help"          => sub { print $helpmsg; exit },
+    "h|help"        => sub { print $helpmsg; exit },
     "return-code"   => sub { print $rvalmsg; exit },
-    "v|version"     => sub { print "$ver\n"; exit },
+    "V|version"     => sub { print "$ver\n"; exit },
     "compatible"    => \$opt_compatible,
-    "verbose"       => \$opt_verbose,
+    "v|verbose"     => \$opt_verbose,
     "s|strict"      => \$opt_strict,
     "n|no-comment"  => \$opt_nocomment,
     "w|no-warning"  => \$opt_nowarning,
@@ -511,6 +559,8 @@ GetOptions(
                 }
             }
         },
+    "64" => sub { set_config(64); },
+    "32" => sub { set_config(32); },
 ) or die("Conversion of ObjASM source to GAS source failed\n");
 
 @input_files = @ARGV;
@@ -799,10 +849,18 @@ sub resolve_filename {
     }
     print "Resolving against paths: ". (join ", ",@paths) ."\n" if ($debug_filename);
 
+
+    # Apply the filename to the relative location of the current source file.
+    my $basedir = $in_file;
+    $basedir =~ s/[^\/]+$//;   # Trim leafname
+    if ($basedir ne '')
+    {
+        unshift @paths, $basedir;
+    }
+
     for my $pathdir (@paths)
     {
         my $newfilename;
-        my $basedir;
         my $path = $pathdir;
         if ($path eq '.' || $path eq '@' || $path eq '')
         {
@@ -820,46 +878,35 @@ sub resolve_filename {
             next;
         }
 
-        if ($pathdir ne '')
+        if ($path ne '')
         {
             $newfilename = "$path$filename";
             print "  Trying $newfilename\n" if ($debug_filename);
             return $newfilename if (-f $newfilename);
         }
 
-        # Apply the filename to the relative location of the current source file.
-        $basedir = $in_file;
-        $basedir =~ s/[^\/]+$//;   # Trim leafname
-        if ($basedir ne '')
-        {
-            $newfilename = "$path$basedir$filename";
-            print "  Trying $newfilename\n" if ($debug_filename);
-            return $newfilename if (-f $newfilename);
-        }
-
-        # If the base directory is in unix form of the RISC OS extensions, strip it.
+        # If the path is in unix form of the RISC OS extensions, strip it.
         # Ie if the source file was <dirs>/s/<leaf> the base directory is <dirs>
-        if ($basedir =~ /(^|.*\/)($extensions_dir_re)\/?$/)
+        if ($path =~ /(^|.*\/)($extensions_dir_re)\/?$/)
         {
-            $basedir = $1;
+            $path = $1;
         }
 
         # We'll try to apply the file that was supplied again
-        if ($basedir ne '')
+        if ($path ne '')
         {
-            $newfilename = "$path$basedir$filename";
+            $newfilename = "$path$filename";
             return $newfilename if (-f $newfilename);
         }
 
         # Now let's try applying the filename given as a RISC OS style filename
         my $unixised = $filename;
         #print "Unixised: $unixised\n";
-        #print "Basedir: $basedir\n";
         # Convert (<dirs>.)?s.<leaf> to <dirs>/s/<leaf>
         if ($unixised =~ /(^|.*\.)($extensions_dir_re)\.([^\.]+)$/)
         {
             $unixised =~ tr!/.!./!;
-            $newfilename = "$path$basedir$unixised";
+            $newfilename = "$path$unixised";
             print "  Trying $newfilename\n" if ($debug_filename);
             return $newfilename if (-f $newfilename);
         }
@@ -868,7 +915,7 @@ sub resolve_filename {
         # For example convert hdr.foo to foo.hdr
         if ($unixised =~ /(^|.*\/)($extensions_dir_re)\/([^\/]+)$/)
         {
-            my $newfilename = "$path$basedir$1$3.$2";
+            my $newfilename = "$path$1$3.$2";
             print "  Trying $newfilename\n" if ($debug_filename);
             return $newfilename if (-f $newfilename);
         }
@@ -877,7 +924,7 @@ sub resolve_filename {
         # If they gave us foo.hdr check this as hdr/foo.
         if ($unixised =~ /(^|.*\/)([^\.]+)\.($extensions_dir_re)$/)
         {
-            my $newfilename = "$path$basedir$1$3/$2";
+            my $newfilename = "$path$1$3/$2";
             print "  Trying $newfilename\n" if ($debug_filename);
             return $newfilename if (-f $newfilename);
         }
