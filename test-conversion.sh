@@ -38,10 +38,10 @@ if [[ "$output" != '' ]] ; then
     fi
 
     if [[ "$output" =~ aarch64 ]] ; then
-        echo "Skipping AArch64 assembly"
+        AS="${AS64:-aarch64-unknown-linux-gnu-as}"
     else
         AS="${AS:-arm-cortexa8_neon-linux-gnueabihf-as}"
-
-        $AS "$output" -o /tmp/dummy
     fi
+
+    $AS "$output" -o /tmp/dummy
 fi
