@@ -1,0 +1,12 @@
+// Check that the common RISC OS 'SIGNATURE' macro works
+
+
+// -------------------------------------------------
+
+        .balign   4
+        .asciz "foo"
+        .balign   4
+        .word     0xff000004
+foo:
+        MOV     pc, lr
+

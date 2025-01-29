@@ -37,7 +37,11 @@ if [[ "$output" != '' ]] ; then
         exit 1
     fi
 
-    AS="${AS:-arm-cortexa8_neon-linux-gnueabihf-as}"
+    if [[ "$output" =~ aarch64 ]] ; then
+        AS="${AS64:-aarch64-unknown-linux-gnu-as}"
+    else
+        AS="${AS:-arm-cortexa8_neon-linux-gnueabihf-as}"
+    fi
 
     $AS "$output" -o /tmp/dummy
 fi

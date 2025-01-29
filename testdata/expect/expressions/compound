@@ -1,0 +1,18 @@
+// Some compound expressions
+
+    .section .text, "ax"
+
+// Extract 'Hel'
+    .asciz "Hel"
+
+// join Hello and World, then perform operation
+    .ascii "ld"
+
+// Simple calculation 1013
+    .word 1013
+
+// Brackets 1035
+    .word 0x040b
+
+    .end
+

@@ -1,0 +1,22 @@
+        .balign        // Ensures alignment.
+
+.func dadd
+dadd:     // Without the ALIGN directive this might not be word-aligned.
+        .global  dadd
+//        PUSH       {r4-r6,lr}    ; This line automatically word-aligned.
+//        FRAME PUSH {r4-r6,lr}
+        // subroutine body
+//        POP        {r4-r6,pc}
+.endfunc
+.func func6
+func6: // Non-AAPCS-conforming function.
+        MOV     pc, lr
+.endfunc
+
+.func func7
+func7: // Another non-AAPCS-conforming function.
+        MOV     pc, lr
+.endfunc
+
+        .end
+

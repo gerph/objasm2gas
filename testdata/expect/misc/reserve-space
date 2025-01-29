@@ -1,0 +1,21 @@
+// Reserving space
+
+            .section    .text, "ax"
+
+.set size, 25
+
+// Labelled
+label:
+            .space   25
+label2:
+            .space       25
+
+// Not labelled
+            .space   25
+            .space       25
+
+// Refers to variables
+            .space       82
+
+            .end
+

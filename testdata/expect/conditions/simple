@@ -1,0 +1,10 @@
+// Simple conditionals
+
+        .asciz "True"
+
+        .asciz "True"
+
+        .asciz "True"
+
+    .end
+

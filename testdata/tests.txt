@@ -40,6 +40,25 @@ RC: 3
 
 
 
+Group: Labels
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Plain labels
+Args: labels/plain
+
+Test: Local labels
+Args: labels/local
+
+Test: Local labels that use ROUT
+Args: labels/local_rout
+
+Test: Local labels within a MACRO
+Args: labels/local_macro
+
+
+
 Group: Data file
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 Creates: gas/$ARG1.s
@@ -78,6 +97,73 @@ Args: definitions/mappings_withreg
 
 
 
+Group: Variables
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Builtins
+Args: variables/builtins
+
+Test: Globals
+Args: variables/globals
+
+Test: Predefine
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --predefine "VARIABLE SETS \"hello\""
+Args: variables/predefine
+
+Test: Predefine x 2
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --predefine "VARIABLE SETS \"hello\"" --predefine "SECOND SETS \"there\""
+Args: variables/predefine2
+
+
+Group: Expressions
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Simple string expressions
+Args: expressions/string
+
+Test: Simple number expressions
+Args: expressions/numbers
+
+Test: Compound expressions
+Args: expressions/compound
+
+Test: Comparison expressions
+Args: expressions/comparison
+
+Test: Confusing a label with an expression
+Args: expressions/confused_labels
+
+
+
+Group: Miscellaneous
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Reserve space
+Args: misc/reserve-space
+
+Test: PROC declaration
+Args: misc/proc
+
+
+
+Group: Conditionals
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Simple
+Args: conditions/simple
+
+Test: ifdef/ifndef
+Args: conditions/ifdef
+
+
 Group: Macros
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 Creates: gas/$ARG1.s
@@ -88,6 +174,12 @@ Args: macros/args_1
 
 Test: 2 arguments
 Args: macros/args_2
+
+Test: Real world signature
+Args: macros/signature
+
+Test: SWI alias
+Args: macros/swi
 
 
 Group: Including files
@@ -100,3 +192,12 @@ Args: includes/get_file
 
 Test: Real world example of GET
 Args: includes/hello_world_pp
+
+
+Group: AArch64
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --inline --64
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Hello world in AArch64
+Args: aarch64/hello_world

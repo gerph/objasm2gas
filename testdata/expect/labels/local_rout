@@ -1,0 +1,17 @@
+
+// Local labels used with ROUT
+
+firstfunc:
+
+Lfirstfunc__local_10_2:
+                       MOV     r0, r5
+
+Lfirstfunc__local_20_2:
+                       B       Lfirstfunc__local_10_2
+
+secondfunc:
+Lsecondfunc__local_10_3:
+                        B       Lsecondfunc__local_20_3
+Lsecondfunc__local_20_3:
+                        B       Lsecondfunc__local_10_3
+

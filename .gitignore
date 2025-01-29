@@ -3,6 +3,7 @@ test.*
 
 # Test things
 dockcross-linux-armv7
+dockcross-linux-arm64
 testdata/gas/
 !testdata/test.pl
 artifacts/

@@ -1,0 +1,12 @@
+// Ifdef conversion in conditionals
+
+        .asciz "False"
+
+        .asciz "True"
+
+        .asciz "False"
+
+        .asciz "True"
+
+    .end
+

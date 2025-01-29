@@ -12,8 +12,8 @@
 
         .section .text.Example, "ax"
 
-        .word     FirstSWI
-        .word     SecondSWI
+        .word     0x046000
+        .word     0x046001
 
         .end
 

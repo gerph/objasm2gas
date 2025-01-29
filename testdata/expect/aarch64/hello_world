@@ -1,0 +1,46 @@
+
+
+.set OS_WriteC, 0 //  &00
+.set OS_WriteS, 1 //  &01
+.set OS_Write0, 2 //  &02
+.set OS_NewLine, 3 //  &03
+
+
+
+
+
+
+        .section    .text, "ax"
+
+.set OS_GenerateError, 43
+
+
+_entry:
+        STP     x29, x30, [sp, #-16]!
+        ADR     x0, message
+        MOV     x10, #OS_Write0
+        SVC     #0
+        ADR     x1, end
+        CMP     x0, x1
+        BNE     bad_return
+        MOV     x10, #OS_NewLine
+        SVC     #0
+        MOV     x0, #0      // no error return
+        LDP     x29, x30, [sp], #16
+        RET
+
+bad_return:
+        ADR     x0, return_wrong
+        MOV     x10, #OS_GenerateError
+        SVC     #0
+
+message:
+        .asciz "Hello world"
+end:
+        .balign
+
+return_wrong:
+        .word     1
+        .asciz "R0 on return from OS_Write0 was not correctly set to the terminator"
+
+

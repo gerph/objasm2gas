@@ -6,6 +6,6 @@
 
 
 
-        .word     Constant
+        .word     1
 
 

@@ -1,0 +1,12 @@
+
+// Predefined on the CLI
+
+        .section    .text, "ax"
+
+// We assume that the variables are predefined.
+        .ascii "hello"
+        .byte 32
+        .asciz "there"
+
+        .end
+

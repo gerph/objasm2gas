@@ -1,0 +1,28 @@
+
+// Test that local labels in a macro stay within the macro
+
+
+
+myfunc:
+
+// here's our routine label
+Lmyfunc__local_10_2:
+                    MOV     r0, #23
+        ADR     r1, Lmyfunc__local_30_2
+
+// here's our macro with labels in
+L_myfunc_macro_HANG__local_10_2:
+        B   L_myfunc_macro_HANG__local_10_2
+L_myfunc_macro_HANG__local_30_2:
+                                // never used
+
+// This should be in the myfunc context and have an incremented sequence number
+Lmyfunc__local_20_3:
+
+// This should jump back to the MOV instruction
+
+        B       Lmyfunc__local_10_2
+
+// This should be the target for the ADR
+Lmyfunc__local_30_2:
+
