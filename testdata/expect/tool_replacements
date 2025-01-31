@@ -1,0 +1,2 @@
+s![^\s]+[/\\]objasm2gas\.pl!TOOL!g
+s!\r!!g

@@ -606,6 +606,7 @@ my %mapping             = ();
 my %constant            = ();
 our %macros;
 our $macroname;
+our %linemapping;
 
 # Conditional stack.
 my @cond_stack = (1,);
@@ -628,6 +629,8 @@ foreach (keys %in_out_files) {
     our $linenum_output  = 1;
     our $context;
     my $elf_file = undef;
+
+    %linemapping = ();
 
     our $f_out;
     if ($out_file eq '-')
@@ -663,7 +666,7 @@ foreach (keys %in_out_files) {
 
     if ($opt_gastool && $out_file ne '-')
     {
-        assemble_file($opt_gastool, $out_file, $elf_file);
+        assemble_file($opt_gastool, $out_file, $elf_file, $in_file);
         # If we were successful, remove the temporary file
         unlink($out_file);
     }
@@ -682,7 +685,7 @@ if ($opt_testexpr)
 
 sub assemble_file
 {
-    my ($gas, $file, $output) = @_;
+    my ($gas, $file, $output, $infile) = @_;
     my $elfoutput = $output;
     my $binoutput;
 
@@ -696,10 +699,26 @@ sub assemble_file
     my $cmd = "$gas $file -o $elfoutput";
     msg_info("Assembling with: $cmd");
 
-    if (system($cmd))
+    my $fh;
+    if (!open($fh, '-|', $cmd))
     {
         unlink $elfoutput;
-        exit_error($ERR_IO, "$0:".__LINE__.": $output: Failed to assemble with GNU as");
+        exit_error($ERR_IO, "$0: $output: Failed to assemble with GNU as: $!");
+    }
+
+    # Process all the lines of the input
+    while (<$fh>)
+    {
+        s!(\Q$file\E):(\d+)!my $l = "$1:$2"; if ($1 eq $file) { $l = $linemapping{$2} // "<generated>:$2" } $l;!ge;
+        s!(\Q$file\E): !($infile // "<generated>") . ": ";!ge;
+        print;
+    }
+    close($fh);
+    my $rc=$?;
+    if ($rc)
+    {
+        unlink $elfoutput;
+        exit_error($ERR_IO, "$0: $output: Failed to assemble with GNU as: rc=".($rc>>8));
     }
 
     if ($binoutput)
@@ -748,7 +767,8 @@ sub process_file {
     $linenum_input = 1;
     while (my $line = <$f_in>) {
         chomp $line;
-        $context = "$our_context$in_file:$linenum_input -> $out_file:$linenum_output";
+        my $linecontext = "$our_context$in_file:$linenum_input";
+        $context = "$linecontext -> $out_file:$linenum_output";
         $linenum_input++;
         if ($opt_inline && $line =~ /^\s+END\s*$/)
         {
@@ -760,7 +780,13 @@ sub process_file {
         {
             print $f_out "$outputline\n";
             my @nlines = ($outputline =~ m/\n/g);
-            $linenum_output += scalar(@nlines);
+            #print "$linenum_output : ".(scalar(@nlines)) . "\n";
+            for my $i (0..scalar(@nlines))
+            {
+                #print "$i => $linecontext\n";
+                $linemapping{$linenum_output + $i} = $linecontext;
+            }
+            $linenum_output += scalar(@nlines) + 1;
         }
     }
     print $f_out "\n";  # required by as
@@ -1064,7 +1090,8 @@ sub expand_macro {
     $linenum_input = $macrodef->{'base_line'};
     for my $line (@{ $macrodef->{'lines'} })
     {
-        $context = "$our_context$in_file:$linenum_input -> $out_file:$linenum_output";
+        my $linecontext = "$our_context$in_file:$linenum_input";
+        $context = "$linecontext -> $out_file:$linenum_output";
         $linenum_input++;
         my $macroline = "$line";
 
@@ -1077,9 +1104,14 @@ sub expand_macro {
         my $outputline = single_line_conv($macroline);
         if (defined $outputline)
         {
-            print $f_out "$outputline\n";
+            #print $f_out "$outputline\n";
             my @nlines = ($outputline =~ m/\n/g);
-            $linenum_output += scalar(@nlines);
+            for my $i (0..scalar(@nlines))
+            {
+                #print "$i => $linecontext\n";
+                $linemapping{$linenum_output + $i} = $linecontext;
+            }
+            $linenum_output += scalar(@nlines) + 1;
         }
     }
     $linenum_output += 1;

@@ -1,0 +1,13 @@
+##
+# Tests just for error handling.
+#
+
+
+Group: Errors
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.o --inline --64 --gas "$AS"
+Expect: expect/$ARG1
+Replace: expect/tool_replacements
+RC: 2
+
+Test: Invalid instruction
+Args: errors/bad_instruction

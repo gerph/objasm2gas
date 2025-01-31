@@ -11,9 +11,12 @@ here=$(cd $(dirname "$0") && pwd -P)
 # Find the output directory
 output=
 next_is_output=false
+gas_used=false
 
 for arg in "$@" ; do
-    if [[ "$arg" = '-o' ]] ; then
+    if [[ "$arg" = '--gas' ]] ; then
+        gas_used=true
+    elif [[ "$arg" = '-o' ]] ; then
         next_is_output=true
     elif $next_is_output ; then
         next_is_output=false
@@ -30,7 +33,7 @@ if [[ "$output" != '' ]] ; then
 fi
 "${here}"/objasm2gas.pl "$@"
 
-if [[ "$output" != '' ]] ; then
+if [[ "$output" != '' ]] && ! $gas_used ; then
     # Check that it assembles
     if [[ ! -f "$output" ]] ; then
         echo "No output created" >&2

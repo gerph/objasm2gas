@@ -12,6 +12,12 @@ AS = ${HERE}/${CROSS32} ${CROSS32_PREFIX}as
 AS64 = ${HERE}/${CROSS64} ${CROSS64_PREFIX}as
 
 
+ifeq (${TEST},)
+TESTSCRIPT = tests.txt
+else
+TESTSCRIPT = tests-${TEST}.txt
+endif
+
 all: tests
 
 
@@ -29,7 +35,7 @@ ${CROSS64}:
 
 
 tests: ${CROSS32} ${CROSS64} testdata/test.pl dirs
-	AS="${AS}" AS64="${AS64}" perl testdata/test.pl -no-riscos-names -junitxml artifacts/junit.xml -script tests.txt -show-command -show-output "../test-conversion.sh" testdata
+	AS="${AS}" AS64="${AS64}" perl testdata/test.pl -no-riscos-names -junitxml artifacts/junit.xml -script "${TESTSCRIPT}" -show-command -show-output "../test-conversion.sh" testdata
 
 dirs:
 	mkdir -p artifacts

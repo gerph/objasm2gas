@@ -201,3 +201,6 @@ Text:Matches: expect/$ARG1
 
 Test: Hello world in AArch64
 Args: aarch64/hello_world
+
+
+Include: tests-errors.txt
