@@ -982,6 +982,9 @@ sub expand_macro {
     my @valuelist;
     my $valueparse=$values;
 
+    msg_info($context.
+        ": Expanding macro '$macroname' with args: $values");
+
     #print "Expand macro '$macroname' args: $values\n";
     while ($valueparse ne '')
     {
@@ -1101,10 +1104,11 @@ sub expand_macro {
             $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)\.?/$macrovars{$1} \/\/ ''/ge;
         }
 
+        #print "Macroline: $macroline\n";
         my $outputline = single_line_conv($macroline);
         if (defined $outputline)
         {
-            #print $f_out "$outputline\n";
+            print $f_out "$outputline\n";
             my @nlines = ($outputline =~ m/\n/g);
             for my $i (0..scalar(@nlines))
             {
@@ -1197,7 +1201,7 @@ sub single_line_conv {
                         'comment' => $comment,
                         # Remember the file and line we are in
                         'base_file' => $in_file,
-                        'base_line' => $linenum_input + 1,  # Start *after* the definition line
+                        'base_line' => $linenum_input,  # Start *after* the definition line (we already incremented)
                     };
             }
             else
@@ -1913,7 +1917,7 @@ sub single_line_conv {
 
     # Expand numeric literals
     $line = expand_literals($line, "$context");
-
+    #print "Expand literals gave: $line\n";
 
     # ------ Conversion: references to field mappings ------
     if ($line =~ m/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/)
@@ -1940,7 +1944,7 @@ sub single_line_conv {
             $line =~ s/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/$space1$instbase$extra$space2$reg1$comma$replacement/;
         }
     }
-
+    #print "About to finish: $line\n";
 
     # ------ Conversion: misc directives ------
     # weak declaration

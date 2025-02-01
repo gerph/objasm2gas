@@ -1,0 +1,3 @@
+[01;31mERROR[0m: TOOL: gas/errors/macro.o: Failed to assemble with GNU as: rc=1
+objasm/errors/macro.s: Assembler messages:
+objasm/errors/macro.s:10 -> [Macro FAULTY] objasm/errors/macro.s:6: Error: ARM register expected -- `mul $reg,$reg,$reg,LSL $reg'

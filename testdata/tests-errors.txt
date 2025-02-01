@@ -11,3 +11,6 @@ RC: 2
 
 Test: Invalid instruction
 Args: errors/bad_instruction
+
+Test: Invalid instruction in macro
+Args: errors/macro
