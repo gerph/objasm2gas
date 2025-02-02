@@ -28,12 +28,12 @@ jobs:
       checks: write
       pull-requests: write
 
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      leafname: ${{ steps.version.outputs.leafname }}
+
     steps:
       - uses: actions/checkout@v4
-
-      - name: Test the tool
-        run: |
-          make tests
 
       - name: Make an archive
         run: |
@@ -42,14 +42,18 @@ jobs:
       - name: Give the output a versioned name
         id: version
         run: |
-          version=$(grep '\$ver =' objasm2gas.pl | grep -o '\d*\.\d*')
+          version=$(grep -E '\$ver =' objasm2gas.pl | grep -E -o '[0-9]{1,}\.[0-9]{1,}')
           echo "This is version: $version"
+          if [[ "$version" == '' ]] ; then echo "FAILED TO GENERATE VERSION" ; exit 1 ; fi
           leafname="ObjAsm2GAS-$version.zip"
           mv ObjAsm2GAS.zip "ObjAsm2GAS-$version.zip"
 
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "leafname=$leafname" >> $GITHUB_OUTPUT
 
+      - name: Test the tool
+        run: |
+          make tests
 
       # See: https://github.com/marketplace/actions/publish-test-results
       - name: Publish Test Results

@@ -14,7 +14,7 @@ no warnings qw(portable);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 my $toolname = 'objasm2gas';
-my $ver = '1.1';
+my $ver = '1.2';
 my $helpmsg = <<"USAGE";
 $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
