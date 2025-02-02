@@ -320,7 +320,6 @@ our %miscexpression_op = (
     "DCFSU"     =>  ".single",
     "DCFD"      =>  ".double",
     "DCFDU"     =>  ".double",
-    "SPACE"     =>  ".space",
 );
 our $miscexpression_op_re = "(?:" . (join "|", keys %miscexpression_op) . ")";
 
@@ -1598,7 +1597,9 @@ sub single_line_conv {
     }
 
     # Byte/String constants
-    if ($cmd eq '=' || $cmd eq 'DCB') {
+    if ($cmd eq '=' || $cmd eq 'DCB' || $cmd =~ /^$miscexpression_op_re$/)
+    {
+        my $op = $miscexpression_op{$cmd} // '.byte';
         # The constants can be things like:
         # = "hello"
         # = "hello", "there"
@@ -1614,13 +1615,19 @@ sub single_line_conv {
 
             if ($value =~ /^"(.*)"$/)
             {
+                if ($op ne '.byte')
+                {
+                    exit_error($ERR_SYNTAX, "$context".
+                        ": Non-byte literal sequences cannot use strings for $value");
+                }
+
                 my $str = $1;
                 if ($nextvalues =~ s/^\s*,\s*0(?=\s|$)//)
                 {
                     # This is a zero-terminated string, so dump it out raw.
                     if (@num_accumulator)
                     {   # Flush the number accumulator
-                        push @lines, ".byte " . join ", ", @num_accumulator;
+                        push @lines, "$op " . join ", ", @num_accumulator;
                         @num_accumulator = ();
                     }
                     push @lines, ".asciz \"$str\"";
@@ -1630,7 +1637,7 @@ sub single_line_conv {
                     # This is a string, so dump it out
                     if (@num_accumulator)
                     {   # Flush the number accumulator
-                        push @lines, ".byte " . join ", ", @num_accumulator;
+                        push @lines, "$op " . join ", ", @num_accumulator;
                         @num_accumulator = ();
                     }
                     push @lines, ".ascii \"$str\"";
@@ -1665,7 +1672,7 @@ sub single_line_conv {
 
         if (@num_accumulator)
         {   # Flush the number accumulator
-            push @lines, ".byte " . join ", ", @num_accumulator;
+            push @lines, "$op " . join ", ", @num_accumulator;
             @num_accumulator = ();
         }
 
@@ -1673,6 +1680,18 @@ sub single_line_conv {
         my $sprefix = (' ' x length($label)) . $lspcs;
         $line = join "\n", map { $unlabelled++ ? "$sprefix$_" : "$label$lspcs$_" } @lines;
         return $line;
+    }
+    elsif ($cmd eq 'SPACE')
+    {
+        $cmd = '.space';
+        my $trail;
+        ($values, $trail) = expression($values);
+        if ($trail)
+        {
+            exit_error($ERR_SYNTAX, "$context".
+                ": Trailing text '$trail' at the end of SPACE reservation not supported");
+        }
+        goto reconstruct;
     }
 
     # ------ Conversion: mappings ------
@@ -1962,12 +1981,6 @@ sub single_line_conv {
     if ($line =~ s/\b($misc_op_re)\b/$misc_op{$1}/eg)
     {
         $line = expand_variables($line);
-    }
-    $line =~ s/(\s+)($miscexpression_op_re)(\s+)(.*?)(\s*(\/\/.*)?)$/$1 . $miscexpression_op{$2} . $3 . gas_number(evaluate($4)) . $5/eg;
-    if (scalar(%miscquoted_op) and $line =~ /\b$miscquoted_op_re\s/)
-    {
-        $line =~ s/\b($miscquoted_op_re)(\s+)([a-zA-Z_0-9\.\-\/]+)/$miscquoted_op{$1}$2"$3"/;
-        $line =~ s/\b($miscquoted_op_re)(\s+)("[a-zA-Z_0-9\.\-\/]+")/$miscquoted_op{$1}$2$3/;
     }
 
     # ------ Conversion: labels on instructions ------
