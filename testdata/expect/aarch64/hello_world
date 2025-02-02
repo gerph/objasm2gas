@@ -16,14 +16,14 @@
 
 
 _entry:
-        STP     x29, x30, [sp, #-16]!
+        STP     x29, x30, [sp, #0xfffffff0]!
         ADR     x0, message
-        MOV     x10, #OS_Write0
+        MOV     x10, #2
         SVC     #0
         ADR     x1, end
         CMP     x0, x1
         BNE     bad_return
-        MOV     x10, #OS_NewLine
+        MOV     x10, #3
         SVC     #0
         MOV     x0, #0      // no error return
         LDP     x29, x30, [sp], #16
@@ -31,7 +31,7 @@ _entry:
 
 bad_return:
         ADR     x0, return_wrong
-        MOV     x10, #OS_GenerateError
+        MOV     x10, #43
         SVC     #0
 
 message:

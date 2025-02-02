@@ -20,7 +20,7 @@
         LDR     r2, =Large
         LDR     r2, =Larger
 
-        ADD     r1, r1, #Large
+        ADD     r1, r1, #0x049000
 
         .end
 

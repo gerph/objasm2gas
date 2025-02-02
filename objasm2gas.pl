@@ -155,10 +155,13 @@ sub unstr
 sub signed
 {
     my ($arg) = @_;
-    $arg = $arg & 0xFFFFFFFF;
-    if ($arg & (1<<31))
+    our $datawidth;
+    our $datatbs;
+    our $datalimit;
+    $arg = $arg & $datawidth;
+    if ($arg & $datatbs)
     {
-        $arg = $arg - (1<<32);
+        $arg = $arg - $datalimit;
     }
     return $arg;
 }
@@ -168,7 +171,8 @@ sub signed
 sub unsigned
 {
     my ($arg) = @_;
-    $arg = $arg & 0xFFFFFFFF;
+    our $datawidth;
+    $arg = $arg & $datawidth;
     return $arg;
 }
 
@@ -411,6 +415,19 @@ our @regnames64 = (
     'pc'
 );
 
+# Data width
+our $datawidth32 = 0xFFFFFFFF;
+our $datawidth64 = 0xFFFFFFFFFFFFFFFF;
+our $datatbs32 = (1<<31);
+our $datatbs64 = (1<<63);
+our $datalimit32 = (1<<32);
+our $datalimit64 = (1<<64);
+
+# Current data width
+our $datawidth;
+our $datatbs;
+our $datalimit;
+
 # Regular expression to match any of the registers
 our $regnames32_re = "(?:" . (join "|", sort { length($a) <=> length($b) } @regnames32) . ")";
 our $regnames64_re = "(?:" . (join "|", sort { length($a) <=> length($b) } @regnames64) . ")";
@@ -433,6 +450,9 @@ sub set_config {
         $builtins{'TARGET_ARCH_AARCH64'} = 1;
         $builtins{'TARGET_ARCH_AARCH32'} = 0;
         $builtins{'CONFIG'} = 64;
+        $datawidth = $datawidth64;
+        $datatbs = $datatbs64;
+        $datalimit = $datalimit64;
     }
     else
     {
@@ -443,6 +463,9 @@ sub set_config {
         $builtins{'TARGET_ARCH_AARCH64'} = 0;
         $builtins{'TARGET_ARCH_AARCH32'} = 1;
         $builtins{'CONFIG'} = 32;
+        $datawidth = $datawidth32;
+        $datatbs = $datatbs32;
+        $datalimit = $datalimit32;
     }
 }
 
@@ -695,7 +718,7 @@ sub assemble_file
         $elfoutput = "tmp-gas-elf.$$";
     }
 
-    my $cmd = "$gas $file -o $elfoutput < /dev/null";
+    my $cmd = "$gas $file -o $elfoutput < /dev/null 2>&1";
     msg_info("Assembling with: $cmd");
 
     my $fh;
@@ -1648,7 +1671,7 @@ sub single_line_conv {
                 # This is a number, so we want to accumulate it.
                 if ($op ne '.single' && $op ne '.double')
                 {
-                    push @num_accumulator, gas_number($value);
+                    push @num_accumulator, gas_number($value, 1);
                 }
                 else
                 {
@@ -1935,6 +1958,44 @@ sub single_line_conv {
             $line .= "\n${lspcs}.balign " . (2**$align);
         }
         return $line;
+    }
+
+    # ------ Conversion: expression constants ------
+    if ($values =~ /#/)
+    {
+        my $orig = $values;
+        my @acc = ();
+        while ($values ne '')
+        {
+            if ($values =~ s/^([^"#]+)//)
+            {
+                push @acc, $1;
+            }
+            elsif ($values =~ s/^("[^"]*")//)
+            {
+                push @acc, $1;
+            }
+            elsif ($values =~ s/^#//)
+            {
+                # We've found a constant expression, so we evaluate
+                push @acc, '#';
+                my ($value, $trail) = expression($values);
+                push @acc, gas_number($value);
+                $values = $trail;
+            }
+            elsif ($values =~ /^"[^"]$/)
+            {
+                exit_error($ERR_SYNTAX, $context.
+                    ": Unbalanced quotes in operands '$orig'");
+            }
+            else
+            {
+                exit_error($ERR_SYNTAX, $context.
+                    ": Internal consistency error parsing operands '$orig'");
+            }
+        }
+        $values = join "", @acc;
+        goto reconstruct;
     }
 
     # ------ Conversion: numeric literals ------
@@ -2540,13 +2601,15 @@ sub evaluate
 ##
 # Convert a numeric value to a GAS value
 #
-# @param[in] $expr:     Value to present
+# @param[in] $expr:         Value to present
+# @param[in] $positive:     1 to ignore negative numbers
 #
 # @return:  The string that can be used in GNU AS for the value, but is humanly readable.
 sub gas_number
 {
-    my ($expr) = @_;
+    my ($expr, $positive) = @_;
     my $value;
+    $positive = $positive // 0;
 
     my $sign = '';
     if ($expr =~ /[^0-9]/)
@@ -2558,10 +2621,21 @@ sub gas_number
         $value = 0 + $expr;
     }
 
-    if ($value < 0)
+    if ($positive)
     {
-        $sign = '-';
-        $value = -$value;
+        $value = $value & $datawidth;
+    }
+    else
+    {
+        if ($value & $datatbs)
+        {
+            $value = $value - $datalimit;
+        }
+        if ($value < 0)
+        {
+            $sign = '-';
+            $value = -$value;
+        }
     }
     if ($value >= 0 && $value < 1024)
     {

@@ -146,6 +146,9 @@ Args: expressions/comparison
 Test: Confusing a label with an expression
 Args: expressions/confused_labels
 
+Test: Literal operands
+Args: expressions/literal_operand
+
 
 
 Group: Miscellaneous

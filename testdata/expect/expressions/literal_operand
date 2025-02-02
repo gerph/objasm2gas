@@ -1,0 +1,48 @@
+
+        .section    .text.Test, "ax"
+
+.set equ_value, 5
+
+.set map_value, 0x0400
+
+            .global gbl_value
+            .set    gbl_value, 0
+.set gbl_value, 27
+
+
+// Test equ_value
+        MOV     r0, #5
+// Test map value
+        MOV     r0, #0x0400
+// Test gbl_value
+        MOV     r0, #27
+
+// Test inside register-relative (equ)
+        LDR     r0, [r0, #5]
+
+// Test inside register-relative (map)
+        LDR     r0, [r0, #0x0400]
+
+// Test inside register-relative (gbl)
+        LDR     r0, [r0, #27]
+
+//----- Now calculations
+
+// Test equ_value
+        MOV     r0, #10
+// Test map value
+        MOV     r0, #0x0800
+// Test gbl_value
+        MOV     r0, #54
+
+// Test inside register-relative (equ)
+        LDR     r0, [r0, #10]
+
+// Test inside register-relative (map)
+        LDR     r0, [r0, #0x0800]
+
+// Test inside register-relative (gbl)
+        LDR     r0, [r0, #54]
+
+        .end
+

@@ -6,10 +6,10 @@
 .set OS_Write0, 2
 
         ADR     r0, Lrout__local_10_1
-  SVC     #OS_Write0
+  SVC     #2
         MOV     r0, #65
-  SVC     #OS_WriteC
-  SVC     #0x100+65
+  SVC     #0
+  SVC     #321
 
 Lrout__local_10_1:
         .asciz "Example"
