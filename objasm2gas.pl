@@ -1598,7 +1598,7 @@ sub single_line_conv {
     }
 
     # Byte/String constants
-    if ($cmd eq '=') {
+    if ($cmd eq '=' || $cmd eq 'DCB') {
         # The constants can be things like:
         # = "hello"
         # = "hello", "there"

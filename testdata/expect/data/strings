@@ -1,0 +1,32 @@
+
+        .section        .text.Asm, "ax"
+
+// Simple strings
+
+code:
+// Hello
+        .ascii "Hello"
+// Hello zero-terminated
+        .asciz "Hello"
+// Multiple strings
+        .ascii "Hello "
+        .ascii "World"
+// Numbers
+        .byte 1, 2, 3
+// Mixed
+        .ascii "Hello"
+        .byte 32
+        .asciz "World"
+// Zero-terminator inline
+        .ascii "Hello"
+        .byte 0
+        .asciz "World"
+
+// DCB variant of strings
+        .ascii "Hello"
+// DCB variant with numbers
+        .byte 1, 2, 3
+
+        .end
+
+

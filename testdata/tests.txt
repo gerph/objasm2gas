@@ -64,6 +64,9 @@ Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
 Creates: gas/$ARG1.s
 Text:Matches: expect/$ARG1
 
+Test: Strings and bytes
+Args: data/strings
+
 Test: Example data for AArch64
 Args: data/aarch64_helloworld
 
