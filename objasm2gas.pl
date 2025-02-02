@@ -696,7 +696,7 @@ sub assemble_file
         $elfoutput = "tmp-gas-elf.$$";
     }
 
-    my $cmd = "$gas $file -o $elfoutput";
+    my $cmd = "$gas $file -o $elfoutput < /dev/null";
     msg_info("Assembling with: $cmd");
 
     my $fh;
