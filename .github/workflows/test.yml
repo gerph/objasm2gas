@@ -1,30 +1,88 @@
+---
+# RISC OS ObjAsm -> GAS converter CI build
+#
+# The 'release' job is triggered when a tag starting with a 'v' is created,
+# which will create a GitHub release for the repository with the name of the
+# version tag. The release will be a draft, and should be updated with
+# changes as you see fit.
+#
+
 name: Makefile CI
 
+# Controls when the action will run. Triggers the workflow on:
+#   * push on any branch.
+#   * tag creation for tags beginning with a 'v'
 on:
   push:
-    branches: [ "*" ]
-  pull_request:
-    branches: [ "*" ]
+    branches: ["*"]
+    tags: ["v*"]
+  # Pull request events happen on pull request state transitions, so we probably don't want this here.
+  #pull_request:
+  #  branches: ["*"]
 
 jobs:
   build:
-
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
     permissions:
       checks: write
       pull-requests: write
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Test the tool
-      run: |
-        make tests
+      - name: Test the tool
+        run: |
+          make tests
 
-    # See: https://github.com/marketplace/actions/publish-test-results
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
-      with:
-        files: |
-          artifacts/junit.xml
+      - name: Make an archive
+        run: |
+          zip -9r ObjAsm2GAS.zip objasm2gas.pl
+
+      - name: Give the output a versioned name
+        id: version
+        run: |
+          version=$(grep '\$ver =' objasm2gas.pl | grep -o '\d*\.\d*')
+          echo "This is version: $version"
+          leafname="ObjAsm2GAS-$version.zip"
+          mv ObjAsm2GAS.zip "ObjAsm2GAS-$version.zip"
+
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "leafname=$leafname" >> $GITHUB_OUTPUT
+
+
+      # See: https://github.com/marketplace/actions/publish-test-results
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            artifacts/junit.xml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ObjAsm2GAS
+          path: ${{ steps.version.outputs.leafname }}
+
+
+  # The release only triggers when the thing that was pushed was a tag starting with 'v'
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download release binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ObjAsm2GAS
+
+      - name: Create Release
+        id: create_release
+        uses: ncipollo/release-action@v1
+        with:
+          prerelease: false
+          draft: true
+          artifacts: "${{ needs.build.outputs.leafname }}"
+          artifactContentType: application/zip

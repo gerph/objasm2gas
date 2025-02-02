@@ -3,6 +3,8 @@
 # Convert ObjAsm-like syntax to somethng that can be assembled by GNU assembler.
 # Based on https://github.com/yxnan/arm2gas
 # Releasd under GPL-3 license.
+# See https://github.com/gerph/objasm2gas for source code.
+#
 
 use strict;
 use warnings;
