@@ -1646,7 +1646,15 @@ sub single_line_conv {
             elsif (defined $value)
             {
                 # This is a number, so we want to accumulate it.
-                push @num_accumulator, gas_number($value);
+                if ($op ne '.single' && $op ne '.double')
+                {
+                    push @num_accumulator, gas_number($value);
+                }
+                else
+                {
+                    # FP numbers are left alone
+                    push @num_accumulator, $value;
+                }
             }
             else
             {
