@@ -18,7 +18,7 @@ $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU s
 
 Usage: $toolname [<options>] <file1> [<file2>...]
 Options:
-    -c, --compatible            Keeps compatibility with armclang assembler
+        --compatible            Keeps compatibility with armclang assembler
     -h, --help                  Show this help text
     -v, --verbose               Show a message on every non-trivial conversion
     -n, --no-comment            Discard all the comments in output

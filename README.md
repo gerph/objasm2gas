@@ -16,17 +16,26 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 
 | Switch                  | Descriptions                                            |
 | :---------------------- | :------------------------------------------------------ |
-| `-c, --compatible`      | Keeps compatibility with armclang assembler             |
+| `--compatible`          | Keeps compatibility with armclang assembler             |
 | `-h, --help`            | Show this help text                                     |
-| `-i, --verbose`         | Show a message on every non-trivial convertions         |
+| `-v, --verbose`         | Show a message on every non-trivial conversion          |
 | `-n, --no-comment`      | Discard all the comments in output                      |
 | `-o, --output=<file>`   | Specify the output filename                             |
 | `-r, --return-code`     | Print return code definitions                           |
 | `-s, --strict`          | Error on directives that have no equivalent counterparts |
-| `-v, --version`         | Show version info                                       |
+| `-V, --version`         | Show version info                                       |
 | `-w, --no-warning`      | Suppress all warning messages                           |
 | `-x, --suffix=<string>` | Suffix of the output filename [default: '`.out`']       |
-| `--inline`              | Process the `GET` and `INCLUDE` inline as objasm, rather than generating a GNU as include |
+| `--inline`              | Process the `GET` and `INCLUDE` inline as objasm, rather than generating a GNU `as` include |
+| `--simple-conditions`   | Leave conditions in GNU `as` form (default is to interpret `objasm` conditionals |
+| `--test-expr=<expr>`    | Diagnostics for exercising the expression parser        |
+| `--gas=<gas-binary>`    | GNU `as` to invoke to create ELF file, after conversion; output file will be the output from GNU `as` |
+| `--bin`                 | When used with `--gas`, create a binary file (default is to produce an ELF file) |
+| `--predefine=<asm>`     | Pre-execute a SETA, SETL or SETS directive.             |
+| `-i <paths>`            | Comma separated list of paths to search for inclues     |
+| `--32`                  | Select 32 bit mode                                      |
+| `--64`                  | Select 64 bit mode                                      |
+
 
 ## Supported conversions
 
@@ -48,9 +57,9 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 
 - [X] `GET` and `INCLUDE` inline
 - [X] RISC OS format filename handling
-- [X] Macro expansion (tentative)
-- [X] Local (numeric) labels
+- [X] Macro expansion
 - [X] Conditionals with expressions
+- [ ] `WHILE` loops
 
 
 ## Demo
