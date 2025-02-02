@@ -81,5 +81,5 @@ mydreg  DN  d0.i32
         GBLS    var3  ; global var
         GBLL    var4  ; global var
 var1    SETA    (1+3)
-var2    SETL    TRUE
+var2    SETL    {TRUE}
 var3    SETS    "newstring"

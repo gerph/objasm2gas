@@ -3,17 +3,17 @@
     .section .text, "ax"
 
 // > expressions (0, 1, 0)
-    .byte 0, 1, 0
+    .byte       0, 1, 0
 // < expressions (1, 0, 0)
-    .byte 1, 0, 0
+    .byte       1, 0, 0
 // >= expressions (0, 1, 1)
-    .byte 0, 1, 1
+    .byte       0, 1, 1
 // <= expressions (1, 0, 1)
-    .byte 1, 0, 1
+    .byte       1, 0, 1
 // == expressions (1, 0)
-    .byte 1, 0
+    .byte       1, 0
 // != expressions (0, 1)
-    .byte 0, 1
+    .byte       0, 1
 
 // not 1>2
         .asciz "NOT 1>2"

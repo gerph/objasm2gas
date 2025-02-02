@@ -1,0 +1,15 @@
+
+        .section        .text.Asm, "ax"
+
+// Word data
+
+code:
+
+// Simple
+        .word     1000
+// List
+        .word     1000, 0x07d0
+
+        .end
+
+

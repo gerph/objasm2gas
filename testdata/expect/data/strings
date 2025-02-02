@@ -27,6 +27,17 @@ code:
 // DCB variant with numbers
         .byte 1, 2, 3
 
+// Keep the comment
+        .ascii "Hello"                   // greeting
+// Keep the comment with multiple values
+        .ascii "Hello"
+        .ascii "There"          // greeting
+// Keep the comment with multiple values and terminator
+        .ascii "Hello"
+        .asciz "There"       // greeting
+// Keep the comment with numbers
+        .byte 1, 2, 3                   // greeting
+
         .end
 
 

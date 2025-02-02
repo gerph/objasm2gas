@@ -67,6 +67,9 @@ Text:Matches: expect/$ARG1
 Test: Strings and bytes
 Args: data/strings
 
+Test: Words
+Args: data/words
+
 Test: Example data for AArch64
 Args: data/aarch64_helloworld
 

@@ -1630,7 +1630,7 @@ sub single_line_conv {
                         push @lines, "$op " . join ", ", @num_accumulator;
                         @num_accumulator = ();
                     }
-                    push @lines, ".asciz \"$str\"";
+                    push @lines, ".asciz$cspcs\"$str\"";
                 }
                 else
                 {
@@ -1640,13 +1640,13 @@ sub single_line_conv {
                         push @lines, "$op " . join ", ", @num_accumulator;
                         @num_accumulator = ();
                     }
-                    push @lines, ".ascii \"$str\"";
+                    push @lines, ".ascii$cspcs\"$str\"";
                 }
             }
             elsif (defined $value)
             {
                 # This is a number, so we want to accumulate it.
-                push @num_accumulator, $value;
+                push @num_accumulator, gas_number($value);
             }
             else
             {
@@ -1672,8 +1672,16 @@ sub single_line_conv {
 
         if (@num_accumulator)
         {   # Flush the number accumulator
-            push @lines, "$op " . join ", ", @num_accumulator;
+            push @lines, "$op$cspcs" . join ", ", @num_accumulator;
             @num_accumulator = ();
+        }
+
+        if (@lines)
+        {
+            if ($comment)
+            {
+                $lines[-1] .= "$vspcs$comment";
+            }
         }
 
         my $unlabelled = 0;
@@ -2313,7 +2321,7 @@ sub expression
             my $hex_lit = $1;
             $value = hex($hex_lit);
         }
-        elsif ($expr =~ s/^(\d+)//)
+        elsif ($expr =~ s/^((?:\.\d+|\d*\.\d+|\d+)(?:E-?\d+)?)//)
         {
             my $dec_lit = $1;
             $value = $dec_lit + 0;
@@ -2331,7 +2339,7 @@ sub expression
             my $name = $1;
             if (defined $mapping{$name})
             {
-                $value = $mapping{$name};
+                $value = $mapping{$name}->[0];  # We use the value of the mapping (ignore register and size)
             }
             elsif (defined $constant{$name})
             {
@@ -2412,7 +2420,7 @@ next_token:
     if (defined $monadic)
     {
         exit_error($ERR_SYNTAX, "$context".
-            ": Evaluation of variables in '$orig' failed at a monadic expansion due to missing right hand operator (at '$expr')");
+            ": Evaluation of variables in '$orig' failed at a monadic expansion due to missing right hand value (at '$expr')");
     }
 
     return ($left, $expr);

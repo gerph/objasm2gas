@@ -7,7 +7,7 @@
 code:
         .word     0xa9bf7bfd       // STP       x29, lr, [sp, #-16]!
         .word     0x910003fd       // MOV       x29, sp
-        .word     0x100000c0       // ADR       x0, 0x18
+        .word     0x100000c0       // ADR       x0, &18
         .word     0xd280004a       // MOV       x10, #2
         .word     0xd4000001       // SVC (x10 = OS_Write0)
         .word     0x52800000       // MOV       w0, #0
