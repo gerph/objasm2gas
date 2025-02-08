@@ -177,7 +177,7 @@ Args: conditions/ifdef
 
 
 Group: Macros
-Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Command: $TOOL --strict objasm/$ARG1.s -o gas/$ARG1.s
 Creates: gas/$ARG1.s
 Text:Matches: expect/$ARG1
 
@@ -192,6 +192,19 @@ Args: macros/signature
 
 Test: SWI alias
 Args: macros/swi
+
+
+Group: Macro errors
+Command: $TOOL --strict objasm/$ARG1.s -o gas/$ARG1.s
+Expect: expect/$ARG1
+
+Test: Missing MEND
+Args: macros/mend_missing
+RC: 4
+
+Test: Macro in Macro
+Args: macros/nesting
+RC: 3
 
 
 Group: Including files

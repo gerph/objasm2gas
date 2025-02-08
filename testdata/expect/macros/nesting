@@ -1,0 +1,1 @@
+[01;31mERROR[0m: objasm/macros/nesting.s:8 -> gas/macros/nesting.s:3: Macro 'TEST' contains a nested macro

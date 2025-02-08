@@ -591,15 +591,15 @@ GetOptions(
 
 # validate input
 if (scalar(@input_files) == 0 && !$opt_testexpr) {
-    exit_error($ERR_ARGV, "$0:".__LINE__.
+    exit_error($ERR_ARGV, "$toolname".
         ": No input file");
 }
 elsif (scalar(@output_files) > 0 && $#input_files != $#output_files && !$opt_testexpr) {
-    exit_error($ERR_ARGV, "$0:".__LINE__.
+    exit_error($ERR_ARGV, "$toolname".
         ": Input and output files must match one-to-one");
 }
 elsif ($output_suffix !~ /^\.*\w+$/ && !$opt_testexpr) {
-    exit_error($ERR_ARGV, "$0:".__LINE__.
+    exit_error($ERR_ARGV, "$toolname".
         ": Invalid suffix '$output_suffix'");
 }
 
@@ -661,12 +661,12 @@ foreach (keys %in_out_files) {
     {
         if ($opt_gastool)
         {
-            exit_error($ERR_SYNTAX, "$0:".__LINE__.": Cannot write to stdout when assembling output")
+            exit_error($ERR_SYNTAX, "$toolname".": Cannot write to stdout when assembling output")
         }
 
         # Write to the stdout stream
         open($f_out, ">&", STDOUT)
-            or exit_error($ERR_IO, "$0:".__LINE__.": <STDOUT>: $!");
+            or exit_error($ERR_IO, "$toolname".": <STDOUT>: $!");
     }
     else
     {
@@ -676,17 +676,22 @@ foreach (keys %in_out_files) {
             $out_file = "$in_file.gas";
         }
         open($f_out, ">", $out_file)
-            or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+            or exit_error($ERR_IO, "$toolname".": $out_file: $!");
         $writing = $out_file;
     }
 
     open(my $f_in, "<", $_)
-        or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
+        or exit_error($ERR_IO, "$toolname".": $in_file: $!");
 
     process_file($f_in, $in_file, undef);
 
-    close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $in_file: $!");
-    close $f_out or exit_error($ERR_IO, "$0:".__LINE__.": $out_file: $!");
+    if (defined $macroname)
+    {
+        exit_error($ERR_SYNTAX, "$toolname".": $in_file: Macro '$macroname' not ended at end of file")
+    }
+
+    close $f_in  or exit_error($ERR_IO, "$toolname".": $in_file: $!");
+    close $f_out or exit_error($ERR_IO, "$toolname".": $out_file: $!");
 
     if ($opt_gastool && $out_file ne '-')
     {
@@ -727,7 +732,7 @@ sub assemble_file
     if (!open($fh, '-|', $cmd))
     {
         unlink $elfoutput;
-        exit_error($ERR_IO, "$0: $output: Failed to assemble with GNU as: $!");
+        exit_error($ERR_IO, "$toolname: $output: Failed to assemble with GNU as: $!");
     }
 
     # Process all the lines of the input
@@ -742,7 +747,7 @@ sub assemble_file
     if ($rc)
     {
         unlink $elfoutput;
-        exit_error($ERR_IO, "$0: $output: Failed to assemble with GNU as: rc=".($rc>>8));
+        exit_error($ERR_IO, "$toolname: $output: Failed to assemble with GNU as: rc=".($rc>>8));
     }
 
     if ($binoutput)
@@ -754,14 +759,14 @@ sub assemble_file
         else
         {
             unlink $elfoutput;
-            exit_error($ERR_IO, "$0:".__LINE__.": $output: Cannot infer 'objcopy' command");
+            exit_error($ERR_IO, "$toolname".": $output: Cannot infer 'objcopy' command");
         }
         $cmd = "$objcopy -O binary $elfoutput $binoutput";
         msg_info("Linking with: $cmd");
         if (system($cmd))
         {
             unlink $elfoutput;
-            exit_error($ERR_IO, "$0:".__LINE__.": $output: Failed to link into a binary");
+            exit_error($ERR_IO, "$toolname".": $output: Failed to link into a binary");
         }
         unlink $elfoutput;
     }
@@ -890,7 +895,7 @@ sub resolve_filename {
         my $pathref = expand_paths($pathvar);
         if (!defined $pathref)
         {
-            exit_error($ERR_IO, "$0:".__LINE__.": $filename: Cannot expand RISC OS path/directory variables")
+            exit_error($ERR_IO, "$toolname".": $filename: Cannot expand RISC OS path/directory variables")
         }
         @paths = @$pathref;
         $filename = $suffix;
@@ -980,7 +985,7 @@ sub resolve_filename {
         }
     }
 
-    exit_error($ERR_IO, "$0:".__LINE__.": $filename: Cannot find file (searched paths: " . (join ", ", @paths) . ")");
+    exit_error($ERR_IO, "$toolname".": $filename: Cannot find file (searched paths: " . (join ", ", @paths) . ")");
 }
 
 
@@ -990,11 +995,11 @@ sub include_file {
     $filename = resolve_filename($filename);
 
     open(my $f_in, "<", $filename)
-        or exit_error($ERR_IO, "$0:".__LINE__.": $filename: $!");
+        or exit_error($ERR_IO, "$toolname".": $filename: $!");
 
     process_file($f_in, $filename);
 
-    close $f_in  or exit_error($ERR_IO, "$0:".__LINE__.": $filename: $!");
+    close $f_in  or exit_error($ERR_IO, "$toolname".": $filename: $!");
 }
 
 sub expand_macro {
@@ -1186,6 +1191,12 @@ sub single_line_conv {
     if ($line =~ /^\s+MACRO/)
     {
         # Marker to show we're in a macro
+        if (defined $macroname)
+        {
+            msg_warn(1, "$context".
+                ": Macro '$macroname' contains a nested macro");
+        }
+
         $macroname = '1';
         return undef;
     }
@@ -1239,6 +1250,11 @@ sub single_line_conv {
             # We're inside a macro definition
             if ($line =~ /^([\$\w]+)?\s+MEND(\/\/.*)?$/) {
                 # We're leaving a macro
+                if (!defined $macroname)
+                {
+                    msg_warn(1, "$context".
+                        ": MEND used when not in a macro");
+                }
                 $macroname = undef;
             }
             else
