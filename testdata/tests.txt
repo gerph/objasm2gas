@@ -70,6 +70,9 @@ Args: data/strings
 Test: Words
 Args: data/words
 
+Test: FP values
+Args: data/floats
+
 Test: Example data for AArch64
 Args: data/aarch64_helloworld
 

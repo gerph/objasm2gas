@@ -1,0 +1,20 @@
+
+        .section        .text.Asm, "ax"
+
+// Word data
+
+data:
+
+// Single
+        .single    1, 2, -5
+// Single fractions
+        .single    0.5, -0.5, -2.5
+
+// Double
+        .double    1, 2, -5
+// Double fractions
+        .double    0.5, -2.5
+
+        .end
+
+

@@ -1,53 +1,54 @@
 // ----- Conversion: labels -----
-LABEL:   // Symbol as label
-1:       // Numeric local label
+LABEL:
+        // Symbol as label
+Lrout__local_1_1:
+                 // Numeric local label
 
 // scope is unsupported
-2:
- // delete ROUT
-3:
+2routA:
+routB:   // ROUT resets local labelling
+3routB:
 
+LroutB__local_1_2:
+LroutB__local_2_2:
+LroutB__local_3_2:
 // branch to numeric local label
-    B   1b
-    BLT 2b      // search level is unsupported
-    BGT 3b
-    BGT 4f // scope is unsupported
-4:
+    B   LroutB__local_1_2
+    BLT LroutB__local_2_2      // search level is unsupported
+    BGT LroutB__local_3_2
+    BGT LroutB__local_4_2routC // scope is unsupported
+LroutB__local_4_2:
 
 // ----- Conversion: functions -----
-.type myproc1, "function"
+.func myproc1
 myproc1:
     // function body
-.Lmyproc1_end:
-.size myproc1, .Lmyproc1_end-myproc1
+ENDP:
 
 // ----- Conversion: sections -----
     .section .text, "ax"  // code
     .balign 8
-    .section 1_data, "awMG", @progbits, 2, foo
+    .section .data.1_data, "awMG", %progbits, 2, foo
 
 // ----- Conversion: numeric literals -----
-    MOV     r1, #0x4   // 0x40000
-    LSL r1, r1, #16
-    MOV     r1, #0x4
-    ASR r1, r1, #16
+    MOV     r1, #4, LSL#16   // 0x40000
+    MOV     r1, #4, ASR #16
     LDR     r1, =0x10AF
     LDR     r1, = 0xCA
-    ADD     r1, #-0x0D
-    ADD     r1, #0x17
+    ADD     r1, #-0x00010000000d
+    ADD     r1, #23
 
 // ----- Conversion: conditional directives -----
-    .ifdef __MICROLIB
-    .endif
-    .ifndef __MICROLIB
-    .elseif __STDLIB
-        .if __DEBUG
-        .endif
-    .endif
+// ELSEIF not currently supported
+//    IF :LNOT::DEF:__MICROLIB
+//    ELSEIF __STDLIB
+//        IF __DEBUG
+//        ENDIF
+//    ENDIF
 
 // ----- Conversion: operators -----
-    MOV     r1, #(7<<2)
-    MOV     r1, #(~2)
+    MOV     r1, #28
+    MOV     r1, #-3
     // MOV     r1, #(7:ROR:2)   ; unsupported
 
 // ----- Conversion: misc directives -----
@@ -57,17 +58,17 @@ myproc1:
     .global  main
     .weak  myproc  // weak declaration
     .include "myinc.h"
-    .byte     "string"
+    .ascii     "string"
     .hword     0xae2e, 0x3c42
     .hword    0xae2e, 0x3c42
     .word     0x4000
     .word    0x4000
     .quad     0x12345678, 0x56781234
     .quad    0x12345678, 0x56781234
-    .single    1.0,-.1,3.1E6
-    .single   1.0,-.1,3.1E6
-    .double    1E308, -4E-100
-    .double   1E308, -4E-100
+    .single    1, -0.1, 3100000
+    .single   1, -0.1, 3100000
+    .double    1e+308, -4e-100
+    .double   1e+308, -4e-100
     .balign   8
     .rept   1
         .warning  "Pass 2"
@@ -77,12 +78,9 @@ myqreg  .qn  q0.i32
 mydreg  .dn  d0.i32
 
 // ----- Conversion: symbol definition -----
-        .set    var1, 0  // local var is not supported
-        .set    var2, FALSE  // local var is not supported
         .global var3
-        .set    var3, ""  // .global var
+        .set    var3, ""  // global var
         .global var4
-        .set    var4, FALSE  // .global var
-.set    var1,    (1+3)
-.set    var2,    TRUE
-.set    var3,    "newstring"
+        .set    var4, F  // global var
+.set var3, "newstring"
+

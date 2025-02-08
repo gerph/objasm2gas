@@ -16,7 +16,7 @@
 
 
 _entry:
-        STP     x29, x30, [sp, #0xfffffff0]!
+        STP     x29, x30, [sp, #-16]!
         ADR     x0, message
         MOV     x10, #2
         SVC     #0

@@ -273,11 +273,11 @@ $operators_binary{'/='} = $operators_binary{'!='};
 our $operators_binary_re = "(?:" . (join '|', map { "\Q$_\E" } sort { length($b) cmp length($a) } keys %operators_binary) . ")";
 our %operators_monadic = (
     # Arithmetic
-    "+"      => sub { my ($right) = @_; return (0+$right) & 0xFFFFFFFF },
-    "-"      => sub { my ($right) = @_; return (0-$right) & 0xFFFFFFFF },
+    "+"      => sub { my ($right) = @_; return (0+$right) },
+    "-"      => sub { my ($right) = @_; return (0-$right) },
     # Binary
-    "~"      => sub { my ($right) = @_; return ($right) ^ 0xFFFFFFFF },
-    ":NOT:"  => sub { my ($right) = @_; return ($right) ^ 0xFFFFFFFF },
+    "~"      => sub { my ($right) = @_; our $datawidth; return ($right) ^ $datawidth },
+    ":NOT:"  => sub { my ($right) = @_; our $datawidth; return ($right) ^ $datawidth },
     # String
     ":LEN:"  => sub { my ($right) = @_; return length(unstr($right)) },
     ":UPPERCASE:" => sub { my ($right) = @_; return '"'. uc(unstr($right)) .'"' },
@@ -298,6 +298,7 @@ our %misc_op = (
     "ALIGN"     =>  ".balign",
     "LTORG"     =>  ".ltorg",
     "INCBIN"    =>  ".incbin",
+    "INCLUDE"   =>  ".include",  # Only processed when no --inline given
     "END"       =>  ".end",
     "WHILE"     =>  ".rept",
     "WEND"      =>  ".endr",
@@ -1650,9 +1651,10 @@ sub single_line_conv {
         # We will decode this as a sequence of regex matched strings
         my @lines = ();
         my @num_accumulator = ();
+        my $is_fp = ($op eq '.single' || $op eq '.double');
         while ($values ne '')
         {
-            my ($value, $nextvalues) = expression($values);
+            my ($value, $nextvalues) = expression($values, $is_fp);
 
             if ($value =~ /^"(.*)"$/)
             {
@@ -1687,7 +1689,7 @@ sub single_line_conv {
             elsif (defined $value)
             {
                 # This is a number, so we want to accumulate it.
-                if ($op ne '.single' && $op ne '.double')
+                if (!$is_fp)
                 {
                     push @num_accumulator, gas_number($value, 1);
                 }
@@ -2311,10 +2313,11 @@ sub expand_variables
 #            trailing string)
 sub expression
 {
-    my ($expr) = @_;
+    my ($expr, $is_fp) = @_;
     my $orig = $expr;
     our $context;
     my $expr_debug = 0;
+    $is_fp = 0 if (!defined $is_fp);
 
     # This is not going to be a proper parser for numeric expressions; it's going
     # to be very simple just to parse expressions left to right.
@@ -2368,7 +2371,7 @@ sub expression
         if ($expr =~ s/^\(//)
         {
             # Bracketted expression, so we need to extract from that expression the value.
-            ($value, $expr) = expression($expr);
+            ($value, $expr) = expression($expr, $is_fp);
             if ($expr =~ s/^\)//)
             {
                 # All is well, they ended with a bracket
