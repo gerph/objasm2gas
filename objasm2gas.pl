@@ -685,10 +685,16 @@ foreach (keys %in_out_files) {
         or exit_error($ERR_IO, "$toolname".": $in_file: $!");
 
     process_file($f_in, $in_file, undef);
+    $context = "$in_file";
 
     if (defined $macroname)
     {
         exit_error($ERR_SYNTAX, "$toolname".": $in_file: Macro '$macroname' not ended at end of file")
+    }
+    if ($builtins{'AREANAME'} eq 'NONE')
+    {
+        msg_warn(1, "$context".
+            ": AREA directive not used");
     }
 
     close $f_in  or exit_error($ERR_IO, "$toolname".": $in_file: $!");
@@ -793,6 +799,9 @@ sub process_file {
         $our_context = "$context -> ";
     }
 
+    my $end_used;
+
+    $end_used = 0;
     $in_file = $filename;
     $linenum_input = 1;
     while (my $line = <$f_in>) {
@@ -800,9 +809,10 @@ sub process_file {
         my $linecontext = "$our_context$in_file:$linenum_input";
         $context = "$linecontext -> $out_file:$linenum_output";
         $linenum_input++;
-        if ($opt_inline && $line =~ /^\s+END\s*$/)
+        if ($line =~ /^\s+END\s*$/)
         {
             # Handle explicit file end here.
+            $end_used = 1;
             last;
         }
         my $outputline = single_line_conv($line);
@@ -821,6 +831,13 @@ sub process_file {
     }
     print $f_out "\n";  # required by as
     $linenum_output += 1;
+    $context = "$in_file";
+
+    if (!$end_used)
+    {
+        msg_warn(1, "$context".
+            ": END directive not used at end of file");
+    }
 
     ($in_file, $linenum_input, $context) = @caller_context;
 }
@@ -1971,6 +1988,9 @@ sub single_line_conv {
 
         # Should the AREANAME be the section name, or the literal area they supplied?
         $builtins{'AREANAME'} = "$sec_name";
+
+        msg_info($context.
+            ": Starting section '$sec_name', flags '$flags'");
 
         $line = "${label}${lspcs}.section${cspcs}$sec_name, \"$flags\"$args${vspcs}${comment}";
 

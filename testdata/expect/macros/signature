@@ -1,5 +1,6 @@
 // Check that the common RISC OS 'SIGNATURE' macro works
 
+        .section    .text, "ax"
 
 // -------------------------------------------------
 
@@ -9,4 +10,5 @@
         .word     0xff000004
 foo:
         MOV     pc, lr
+
 

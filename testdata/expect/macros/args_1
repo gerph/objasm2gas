@@ -1,6 +1,7 @@
 
+        .section    .text, "ax"
+
 
         .byte 15
 
-        .end
 

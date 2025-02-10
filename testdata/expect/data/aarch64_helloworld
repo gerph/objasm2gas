@@ -19,6 +19,4 @@ message:
         .byte 10
         .byte 0
 
-        .end
-
 

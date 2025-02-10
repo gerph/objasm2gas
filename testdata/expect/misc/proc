@@ -18,5 +18,4 @@ func7: // Another non-AAPCS-conforming function.
         MOV     pc, lr
 .endfunc
 
-        .end
 

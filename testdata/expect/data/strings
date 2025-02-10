@@ -38,6 +38,4 @@ code:
 // Keep the comment with numbers
         .byte 1, 2, 3                   // greeting
 
-        .end
-
 

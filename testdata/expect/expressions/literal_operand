@@ -44,5 +44,4 @@
 // Test inside register-relative (gbl)
         LDR     r0, [r0, #54]
 
-        .end
 

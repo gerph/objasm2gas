@@ -1,4 +1,6 @@
 
+        AREA    |.text|, CODE, READONLY
+
         MACRO
         TEST    $a
         = $a

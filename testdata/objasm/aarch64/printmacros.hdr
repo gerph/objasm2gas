@@ -43,3 +43,5 @@ $label  PrintString $reg
         SWI     OS_Write0
         LDP     x0, x10, [sp], #16
         MEND
+
+        END

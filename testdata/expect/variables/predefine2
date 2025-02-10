@@ -8,5 +8,4 @@
         .byte 32
         .asciz "there"
 
-        .end
 

@@ -10,6 +10,4 @@ code:
 // List
         .word     1000, 0x07d0
 
-        .end
-
 

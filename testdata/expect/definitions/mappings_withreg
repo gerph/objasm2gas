@@ -21,5 +21,4 @@ label:
         ADD     r0, r7, #1
         LDR     r0, =Constant_1
 
-        .end
 

@@ -1,4 +1,6 @@
 
+        .section    .text, "ax"
+
 
 // Used 15, 80
         .byte 15
@@ -7,5 +9,4 @@
         .byte 15
 
 
-        .end
 

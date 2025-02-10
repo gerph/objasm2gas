@@ -1,5 +1,6 @@
 
 // Example of a raw SWI call macro
+        .section    .text, "ax"
 
 
 .set OS_WriteC, 0
@@ -14,5 +15,4 @@
 Lrout__local_10_1:
         .asciz "Example"
 
-        .end
 

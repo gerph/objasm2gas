@@ -1,5 +1,6 @@
 ; Check that the common RISC OS 'SIGNATURE' macro works
 
+        AREA    |.text|, CODE, READONLY
 
 ; -------------------------------------------------
         MACRO
@@ -13,3 +14,5 @@ $label
 
 foo     SIGNATURE
         MOV     pc, lr
+
+        END

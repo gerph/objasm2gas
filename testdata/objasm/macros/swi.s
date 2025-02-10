@@ -1,5 +1,6 @@
 
 ; Example of a raw SWI call macro
+        AREA    |.text|, CODE, READONLY
 
         MACRO
 $label  SWI     $swi

@@ -6,5 +6,4 @@
 // We assume that the variable is predefined.
         .asciz "hello"
 
-        .end
 

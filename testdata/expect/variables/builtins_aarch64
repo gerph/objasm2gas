@@ -24,5 +24,4 @@
 // Architecture
         .byte 7, 0
 
-        .end
 
