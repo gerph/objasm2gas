@@ -58,6 +58,7 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 - [X] `GET` and `INCLUDE` inline
 - [X] RISC OS format filename handling
 - [X] Macro expansion
+- [X] Local variables within macros
 - [X] Conditionals with expressions
 - [ ] `WHILE` loops
 

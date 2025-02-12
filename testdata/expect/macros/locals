@@ -1,0 +1,15 @@
+
+// Example of local variables
+        .section    .text, "ax"
+
+
+// Should give '0, 18', '1, 15'
+        .word     0, 18
+        .word     1, 15
+
+// Should give '0, 24', '1, 21', '2, 15'
+        .word     0, 24
+        .word     1, 21
+        .word     2, 15
+
+

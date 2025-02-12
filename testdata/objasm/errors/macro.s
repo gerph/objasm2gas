@@ -7,6 +7,6 @@
         MEND
 
 entry
-        FAULTY  $reg
+        FAULTY  x1
 
         END

@@ -196,6 +196,9 @@ Args: macros/signature
 Test: SWI alias
 Args: macros/swi
 
+Test: Local variables
+Args: macros/locals
+
 
 Group: Macro errors
 Command: $TOOL --strict objasm/$ARG1.s -o gas/$ARG1.s

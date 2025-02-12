@@ -629,8 +629,15 @@ our $mapping_base       = 0;
 my $mapping_register    = undef;
 my %mapping             = ();
 my %constant            = ();
+
+# Macros
 our %macros;
 our $macroname;
+
+# Count of the nesting of the macros used
+our $macro_nesting = 0;
+our $macro_nesting_limit = 64;
+
 our %linemapping;
 
 # Conditional stack.
@@ -1020,6 +1027,7 @@ sub include_file {
     close $f_in  or exit_error($ERR_IO, "$toolname".": $filename: $!");
 }
 
+
 sub expand_macro {
     my ($macroname, $label, $values) = @_;
     our $macros;
@@ -1028,18 +1036,26 @@ sub expand_macro {
     our $context;
     my @valuelist;
     my $valueparse=$values;
+    my $debug_macros = 0;
 
     msg_info($context.
         ": Expanding macro '$macroname' with args: $values");
 
-    #print "Expand macro '$macroname' args: $values\n";
+    $macro_nesting += 1;
+    if ($macro_nesting > $macro_nesting_limit)
+    {
+        exit_error($ERR_SYNTAX, "$context".
+            ": Macro nesting levels exceeded at macro '$macroname': $values");
+    }
+
+    print "Expand macro '$macroname' args: $values\n" if ($debug_macros);
     while ($valueparse ne '')
     {
         next if ($valueparse =~ s/^\s+//);
-        if ($valueparse =~ s/^((?:"[^"]*"[^,]*)+?)\s*//)
+        if ($valueparse =~ s/^((?:"[^"]*"[^,]*)+?)\s*(,|$)//)
         {
             # Quoted string.
-            #print "Quoted value '$1'\n";
+            print "Quoted value '$1'\n" if ($debug_macros);
             my ($val, $tail) = expression($1);
             if ($val =~ /^"(.*)"$/)
             {
@@ -1047,16 +1063,33 @@ sub expand_macro {
             }
             push @valuelist, $val;
         }
-        elsif ($valueparse =~ s/^([^,\s]+)//)
+        elsif ($valueparse =~ s/^([\-0-9a-zA-Z_]+)\s*(,|$)/$2/)
         {
             # Should be either an empty string or a value
-            #print "Simple value '$1'\n";
+            print "Simple value '$1'\n" if ($debug_macros);
             push @valuelist, $1;
+        }
+        elsif ($valueparse =~ s/^,//)
+        {
+            print "Empty value\n" if ($debug_macros);
+            push @valuelist, '';
         }
         else
         {
-            #print "Empty value\n";
-            push @valuelist, '';
+            #print "EXPRESSION: $valueparse\n";
+            my ($val, $tail) = expression($valueparse);
+            if (!defined $val)
+            {
+                exit_error($ERR_SYNTAX, "$context".
+                    ": Cannot parse expression at '$valueparse'");
+            }
+            if ($val =~ /^"(.*)"$/)
+            {
+                $val = $1;
+            }
+            print "Expression value: $val\n" if ($debug_macros);
+            push @valuelist, $val;
+            $valueparse = $tail;
         }
         # Remove any training spaces
         $valueparse =~ s/^\s+//;
@@ -1067,7 +1100,7 @@ sub expand_macro {
         else
         {
             # No more parameters supplied, so we're done.
-            #print "Giving up at: $valueparse\n";
+            print "Giving up at: $valueparse\n" if ($debug_macros);
             last;
         }
     }
@@ -1133,8 +1166,11 @@ sub expand_macro {
     $our_context = "${our_context}[Macro $macroname] ";
 
     # We're in a macro
+    # ... so set up the label stack
     my $inrout = $label_stack[-1]->{'rout'};
     push @label_stack, {'backward'=>{}, 'forward'=>{}, 'rout'=>"_${inrout}_macro_$macroname"};
+    # ... and the local variable stack
+    push @variable_stack, {};
 
     $in_file = $macrodef->{'base_file'};
     $linenum_input = $macrodef->{'base_line'};
@@ -1167,13 +1203,21 @@ sub expand_macro {
     }
     $linenum_output += 1;
 
+    # Leaving the macro
+    # ... so pop the label stack
     my $macro_labels = pop @label_stack;
     if (scalar( keys %{ $macro_labels->{'backward'} }) > 0)
     {
         # If any labels were defined, increment the sequence number, so that we don't clash.
         $label_sequence++;
     }
+    # ... and variable stack
+    pop @variable_stack;
+
+    # Restore the old context
     ($in_file, $linenum_input, $context) = @caller_context;
+
+    $macro_nesting -= 1;
 }
 
 
@@ -1284,7 +1328,6 @@ sub single_line_conv {
     }
 
     # ------ Conversion: comments ------
-    # if has comments
     if ($line =~ m/(^|\s+);/) {
         if ($opt_nocomment) {
             $line =~ s/(^|\s+);.*$//;
@@ -1326,13 +1369,6 @@ sub single_line_conv {
         $values=$5;
         $vspcs=$6;
         $comment=$7 // '';
-        if ($cmd && defined $macros{$cmd})
-        {
-            # Macro expansion requested.
-            #print "Macro expansion '$cmd' of '$label', '$values'\n";
-            expand_macro($cmd, $label, $values);
-            return undef;
-        }
     }
     elsif ($line =~ /^(\s*)(\/\/.*)$/)
     {
@@ -1351,21 +1387,6 @@ sub single_line_conv {
         return undef;
     }
     #print "LINE: label='$label', cmd='$cmd', values='$values', comment='$comment'\n";
-
-    # ------ Conversion: space reservation ------
-    if ($cmd eq 'SPACE' || $cmd eq '%')
-    {
-        $cmd = '.space';
-        # FIXME: Doesn't support the <expr>, <fill>, <fillsize> form
-        my $trail;
-        ($values, $trail) = expression($values);
-        if ($trail ne '')
-        {
-            exit_error($ERR_SYNTAX, $context.
-                ": Trailing text '$trail' not recognised on $cmd");
-        }
-        goto reconstruct;
-    }
 
     # ------ Conversion: conditional directives ------
     if ($cmd eq 'IF' || $cmd eq '[')
@@ -1505,6 +1526,30 @@ sub single_line_conv {
                 return undef;
             }
         }
+    }
+
+    # ------ Conversion: Macro expansion ------
+    if ($cmd && defined $macros{$cmd})
+    {
+        # Macro expansion requested.
+        #print "Macro expansion '$cmd' of '$label', '$values'\n";
+        expand_macro($cmd, $label, $values);
+        return undef;
+    }
+
+    # ------ Conversion: space reservation ------
+    if ($cmd eq 'SPACE' || $cmd eq '%')
+    {
+        $cmd = '.space';
+        # FIXME: Doesn't support the <expr>, <fill>, <fillsize> form
+        my $trail;
+        ($values, $trail) = expression($values);
+        if ($trail ne '')
+        {
+            exit_error($ERR_SYNTAX, $context.
+                ": Trailing text '$trail' not recognised on $cmd");
+        }
+        goto reconstruct;
     }
 
     # ------ Conversion: local label assignment ------
