@@ -202,6 +202,10 @@ Args: macros/swi
 Test: Local variables
 Args: macros/locals
 
+Test: AArch64 Stacking example
+Command: $TOOL --64 --strict objasm/$ARG1.s -o gas/$ARG1.s
+Args: macros/aarch64_stacking
+
 
 Group: Macro errors
 Command: $TOOL --strict objasm/$ARG1.s -o gas/$ARG1.s

@@ -6,6 +6,10 @@
 
 
 
+
+
+
+
 // Split register list into r0
         .asciz "r0"
 // Split register list into r0, r1
@@ -33,5 +37,35 @@
         .asciz "r3"
         .asciz "sp"
         .asciz "lr"
+
+//;;;;;;; Now reverse
+
+// Split register list into r0
+        .asciz "r0"
+// Split register list into r0, r1
+        .asciz "r1"
+        .asciz "r0"
+// Split register list into r0, r1
+        .asciz "r1"
+        .asciz "r0"
+
+// Split register list into r0, r1, r2, r3
+        .asciz "r3"
+        .asciz "r2"
+        .asciz "r1"
+        .asciz "r0"
+// Split register list into r0, r1, r2, r3
+        .asciz "r3"
+        .asciz "r2"
+        .asciz "r1"
+        .asciz "r0"
+
+// Split register list into r0, r1, r2, r3, sp, lr
+        .asciz "lr"
+        .asciz "sp"
+        .asciz "r3"
+        .asciz "r2"
+        .asciz "r1"
+        .asciz "r0"
 
 

@@ -1,0 +1,65 @@
+
+// Macro to push registers, like the ARM STMFD/LDMFD.
+        .section    .text, "ax"
+
+// -------------------------------------------------
+
+
+// -------------------------------------------------
+
+
+
+// -------------------------------------------------
+        .global entry_reglist
+        .set    entry_reglist, ""
+
+// -------------------------------------------------
+
+
+// Push registers x0
+  STR     x0, [sp, #-16]!
+// Push registers x0, x1
+  STP     x0,x1, [sp, #-16]!
+// Push registers x0, x1, x2
+  STP     x1,x2, [sp, #-16]!
+  STR     x0, [sp, #-16]!
+// Push registers x0, x1, x2, x3
+  STP     x2,x3, [sp, #-16]!
+  STP     x0,x1, [sp, #-16]!
+
+//------
+// Pull registers x0
+
+        LDR     x0, [sp], #16
+// Pull registers x0, x1
+
+        LDP     x0,x1, [sp], #16
+// Pull registers x0, x1, x2
+
+        LDR     x0, [sp], #16
+        LDP     x1,x2, [sp], #16
+// Pull registers x0, x1, x2, x3
+
+        LDP     x0,x1, [sp], #16
+        LDP     x2,x3, [sp], #16
+
+
+//------
+// Entry/Exit (none)
+.set entry_reglist, ""
+  STP     x29,lr, [sp, #-16]!
+        MOV     x29, sp
+
+        LDR     lr, [sp], #16
+        RET
+
+// Entry/Exit x0
+.set entry_reglist, "x0"
+  STP     x29,lr, [sp, #-16]!
+        MOV     x29, sp
+  STR     x0, [sp, #-16]!
+
+        LDP     x0,lr, [sp], #16
+        RET
+
+

@@ -240,7 +240,7 @@ our %operators_binary = (
                                 : (unsigned($left) != unsigned($right))) },
     "=="     => sub { my ($left, $right) = @_;
                       return bool(isstring($left, $right)
-                                ? ("$left" eq "$right")
+                                ? (unstr($left) eq unstr($right))
                                 : (unsigned($left) == unsigned($right))) },
     # String
     ":LEFT:" => sub { my ($left, $right) = @_; $right = signed($right); return '"'. ($right > 0 ? substr(unstr($left), 0, $right) : '') .'"' },
@@ -317,28 +317,46 @@ sub splitregs
 our %operators_binary_extensions = (
     ":REGLISTLEFT:" => sub {
         my ($left, $right) = @_; $right = signed($right);
-        my @regs = splitregs($left);
+        my @regs = splitregs(unstr($left));
+        if (scalar(@regs) <= $right)
+        {
+            return '"' . join(",", @regs) . '"';
+        }
         #print "RLLEFT: ".join(",", @regs[0..$right-1])."\n";
-        return join(",", @regs[0..$right-1]);
+        return '"' . join(",", @regs[0..$right-1]) . '"';
     }, # First $right items
 
     ":REGLISTSKIP:" => sub {
         my ($left, $right) = @_; $right = signed($right);
-        my @regs = splitregs($left);
-        return join(",", @regs[$right..$#regs]);
+        my @regs = splitregs(unstr($left));
+        if (scalar(@regs) <= $right)
+        {
+            return '""';
+        }
+        return '"' . join(",", @regs[$right..$#regs]) . '"';
     }, # Skip $right items, and return the rest
 
 
     ":REGLISTRIGHT:" => sub {
         my ($left, $right) = @_; $right = signed($right);
-        my @regs = splitregs($left);
-        return join(",", @regs[-$right..-1]);
+        my @regs = splitregs(unstr($left));
+        if (scalar(@regs) <= $right)
+        {
+            return '"' . join(",", @regs) . '"';
+        }
+        return '"' . join(",", @regs[-$right..-1]) . '"';
     }, # Last $right items
 
     ":REGLISTTRIM:" => sub {
         my ($left, $right) = @_; $right = signed($right);
-        my @regs = splitregs($left);
-        return join(",", @regs[0..-$right-1]);
+        my @regs = splitregs(unstr($left));
+        if (scalar(@regs) <= $right)
+        {
+            #print "RLTRIM: <none>\n";
+            return "";
+        }
+        #print "RLTRIM: ".join(",", @regs[0..$#regs-$right])."\n";
+        return '"' . join(",", @regs[0..$#regs-$right]) . '"';
     }, # Trim off the last $right items
 );
 # FIXME: For now we always support the extensions
@@ -494,6 +512,7 @@ our @regnames64 = (
     (map { "w$_" } (0..30)),
     'sp',
     'wsp',
+    'lr',
     'xlr',
     'wlr',
     'xzr',
@@ -1446,7 +1465,7 @@ sub single_line_conv {
                 my $var = find_variable($v);
                 my $val;
                 if (defined $var)
-                { $val = $var->{'value'}; }
+                { $val = unstr($var->{'value'}); }
                 $val \/\/ $s/ge;
 
     # FIXME: This parse doesn't handle strings with // in.
@@ -2650,6 +2669,7 @@ sub expression
         {
             my $right = $value;
             $value = $operator->($left, $right);
+            print " ($left, $right) => $value\n" if ($expr_debug);
             $left = $value;
             $operator = undef;
         }
@@ -2812,7 +2832,10 @@ sub gas_number
     {
         if ($value & $datatbs)
         {
-            $value = $value - $datalimit;
+            #$value = ($value & $datawidth) - $datalimit;
+            # 64bit calculations in perl don't really work, so this should
+            # be good enough.
+            $value = ($value & 0xFFFFFFFFFFFF) - 0x1000000000000;
         }
         if ($value < 0)
         {
