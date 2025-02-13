@@ -9,7 +9,6 @@
 use strict;
 use warnings;
 use feature ":5.14";
-no warnings qw(experimental);
 no warnings qw(portable);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
@@ -260,6 +259,90 @@ our %operators_binary = (
     #   :ROL:
     # See: https://developer.arm.com/documentation/dui0801/g/Symbols--Literals--Expressions--and-Operators/Unary-operators?lang=en
 );
+sub splitregs
+{
+    my ($rlist) = @_;
+    my @list;
+    our $regnames_re;
+    if ($rlist =~ /^"([^"]*)"$/)
+    {
+        $rlist = $1;
+    }
+    $rlist =~ s/^\s*//;
+    while ($rlist)
+    {
+        last if ($rlist eq '');
+        if ($rlist =~ s/^([a-zA-Z])(\d+)\s*-\s*\1(\d+)//)
+        {
+            my $rn = lc($1);
+            my $rl = $2 + 0;
+            my $rh = $3 + 0;
+            if ($rh <= $rl)
+            {
+                exit_error($ERR_SYNTAX,
+                           "Register list parse failed (low must be below high): $rn$rl-$rn$rh");
+            }
+            push @list, map "$rn$_", ($rl..$rh);
+        }
+        elsif ($rlist =~ s/^([a-zA-Z])(\d+)//)
+        {
+            push @list, "$1$2";
+        }
+        elsif ($rlist =~ s/^($regnames_re)//i)
+        {
+            my $rn = lc $1;
+            push @list, $rn;
+        }
+        else
+        {
+            exit_error($ERR_SYNTAX,
+                       "Register list parse failed (unknown registers): $rlist");
+        }
+
+        $rlist =~ s/^\s*//;
+        last if ($rlist eq '');
+        if ($rlist =~ s/^,\s*//)
+        {
+            # All's well
+        }
+        else
+        {
+            exit_error($ERR_SYNTAX,
+                       "Register list parse failed (cannot parse trailing text): $rlist");
+        }
+    }
+    #print "SplitRegs: ".join(', ', @list)."\n";
+    return @list;
+}
+our %operators_binary_extensions = (
+    ":REGLISTLEFT:" => sub {
+        my ($left, $right) = @_; $right = signed($right);
+        my @regs = splitregs($left);
+        #print "RLLEFT: ".join(",", @regs[0..$right-1])."\n";
+        return join(",", @regs[0..$right-1]);
+    }, # First $right items
+
+    ":REGLISTSKIP:" => sub {
+        my ($left, $right) = @_; $right = signed($right);
+        my @regs = splitregs($left);
+        return join(",", @regs[$right..$#regs]);
+    }, # Skip $right items, and return the rest
+
+
+    ":REGLISTRIGHT:" => sub {
+        my ($left, $right) = @_; $right = signed($right);
+        my @regs = splitregs($left);
+        return join(",", @regs[-$right..-1]);
+    }, # Last $right items
+
+    ":REGLISTTRIM:" => sub {
+        my ($left, $right) = @_; $right = signed($right);
+        my @regs = splitregs($left);
+        return join(",", @regs[0..-$right-1]);
+    }, # Trim off the last $right items
+);
+# FIXME: For now we always support the extensions
+%operators_binary = (%operators_binary, %operators_binary_extensions);
 # Aliases
 $operators_binary{'%'} = $operators_binary{':MOD:'};
 $operators_binary{'&'} = $operators_binary{':AND:'};
@@ -1124,7 +1207,7 @@ sub expand_macro {
         my $value = $valuelist[$index];
         if (!defined $value or $value eq '|')
         {
-            $value = $macrodef->{'defaults'}->[$index];
+            $value = $macrodef->{'defaults'}->[$index] // "";
         }
         $macrovars{$varname} = $value;
         #print "Macro param #$index '$varname' => $value\n";
@@ -1184,7 +1267,7 @@ sub expand_macro {
         # Perform the substitutions
         if ($macroline =~ /\$/)
         {
-            $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)\.?/$macrovars{$1} \/\/ ''/ge;
+            $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)\.?/$macrovars{$1} \/\/ "$1"/ge;
         }
 
         #print "Macroline: $macroline\n";
@@ -1357,6 +1440,14 @@ sub single_line_conv {
     my $values;
     my $vspcs;
     my $comment;
+
+    $line =~ s/(\$([A-Za-z_][A-Za-z0-9_]*))\.?/
+                my ($s, $v) = ($1, $2);
+                my $var = find_variable($v);
+                my $val;
+                if (defined $var)
+                { $val = $var->{'value'}; }
+                $val \/\/ $s/ge;
 
     # FIXME: This parse doesn't handle strings with // in.
     if ($line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/ ||
@@ -1717,6 +1808,12 @@ sub single_line_conv {
         while ($values ne '')
         {
             my ($value, $nextvalues) = expression($values, $is_fp);
+            if (!defined $value)
+            {
+                exit_error($ERR_SYNTAX, "$context".
+                    ": Literal sequences cannot interpret '$values'");
+            }
+
 
             if ($value =~ /^"(.*)"$/)
             {

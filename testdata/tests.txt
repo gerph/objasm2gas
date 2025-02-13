@@ -152,6 +152,9 @@ Args: expressions/confused_labels
 Test: Literal operands
 Args: expressions/literal_operand
 
+Test: Expression extensions
+Args: expressions/extensions
+
 
 
 Group: Miscellaneous

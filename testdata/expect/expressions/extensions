@@ -1,0 +1,37 @@
+
+// Extensions to the expression parser
+
+        .section    .text, "ax"
+
+
+
+
+// Split register list into r0
+        .asciz "r0"
+// Split register list into r0, r1
+        .asciz "r0"
+        .asciz "r1"
+// Split register list into r0, r1
+        .asciz "r0"
+        .asciz "r1"
+
+// Split register list into r0, r1, r2, r3
+        .asciz "r0"
+        .asciz "r1"
+        .asciz "r2"
+        .asciz "r3"
+// Split register list into r0, r1, r2, r3
+        .asciz "r0"
+        .asciz "r1"
+        .asciz "r2"
+        .asciz "r3"
+
+// Split register list into r0, r1, r2, r3, sp, lr
+        .asciz "r0"
+        .asciz "r1"
+        .asciz "r2"
+        .asciz "r3"
+        .asciz "sp"
+        .asciz "lr"
+
+

@@ -62,10 +62,22 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 - [X] Conditionals with expressions
 - [ ] `WHILE` loops
 
+## Extensions
+
+In addition to the standard operations, the conversion includes a few
+extensions to make using ObjAsm syntax a little easier.
+
+Expression parsing:
+
+* `$regs :REGLISTLEFT: $num` - a binary operator which returns the left most `$num` registers from the supplied register list.
+* `$regs :REGLISTRIGHT: $num` - a binary operator which returns the right most `$num` registers from the supplied register list.
+* `$regs :REGLISTSKIP: $num` - a binary operator which returns the supplied register list without the first `$num` registers.
+* `$regs :REGLISTTRIM: $num` - a binary operator which returns the supplied register list without the last `$num` registers.
+
 
 ## Demo
 
-Conversion result of `demo.s` (with option `-i -c`)
+Conversion result of `demo.s`:
 
 ![](./demo/demo.png)
 
