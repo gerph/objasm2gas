@@ -13,7 +13,7 @@ no warnings qw(portable);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 my $toolname = 'objasm2gas';
-my $ver = '1.2';
+my $ver = '1.3';
 my $helpmsg = <<"USAGE";
 $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
@@ -67,7 +67,7 @@ my $rvalmsg = <<"RETVAL";
 $toolname may return one of several error code if it encounters problems.
 
     0       No problems occurred.
-    1       Invalid or conflict command-line args.
+    1       Invalid or conflicting command-line args.
     2       File I/O error.
     3       Unsupported conversion.
     4       Syntax or processing error.
