@@ -50,7 +50,7 @@
   STP     x29,lr, [sp, #-16]!
         MOV     x29, sp
 
-        LDR     lr, [sp], #16
+        LDP     x29,lr, [sp], #16
         RET
 
 // Entry/Exit x0
@@ -59,7 +59,30 @@
         MOV     x29, sp
   STR     x0, [sp, #-16]!
 
-        LDP     x0,lr, [sp], #16
+        LDR     x0, [sp], #16
+        LDP     x29,lr, [sp], #16
+        RET
+
+// Entry/Exit x0, x1
+.set entry_reglist, "x0, x1"
+  STP     x29,lr, [sp, #-16]!
+        MOV     x29, sp
+  STP     x0,x1, [sp, #-16]!
+
+        LDP     x0,x1, [sp], #16
+        LDP     x29,lr, [sp], #16
+        RET
+
+// Entry/Exit x0, x1, x2
+.set entry_reglist, "x0-x2"
+  STP     x29,lr, [sp, #-16]!
+        MOV     x29, sp
+  STP     x1,x2, [sp, #-16]!
+  STR     x0, [sp, #-16]!
+
+        LDR     x0, [sp], #16
+        LDP     x1,x2, [sp], #16
+        LDP     x29,lr, [sp], #16
         RET
 
 

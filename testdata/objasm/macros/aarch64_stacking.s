@@ -49,7 +49,7 @@ entry_reglist SETS "$reglist"
 $label  Push    "x29, lr"
         MOV     x29, sp
     [ "$reglist" != ""
-$label  Push    "$reglist"
+        Push    "$reglist"
     ]
         MEND
 
@@ -57,9 +57,9 @@ $label  Push    "$reglist"
         MACRO
 $label  EXIT
     [ "$entry_reglist" = ""
-$label  Pull    "lr"
+$label  Pull    "x29, lr"
     |
-$label  Pull    "$entry_reglist, lr"
+$label  Pull    "$entry_reglist, x29, lr"
     ]
         RET
         MEND
@@ -92,6 +92,14 @@ $label  Pull    "$entry_reglist, lr"
 
 ; Entry/Exit x0
         Entry   "x0"
+        EXIT
+
+; Entry/Exit x0, x1
+        Entry   "x0, x1"
+        EXIT
+
+; Entry/Exit x0, x1, x2
+        Entry   "x0-x2"
         EXIT
 
         END
