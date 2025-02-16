@@ -1,0 +1,11 @@
+
+        GET ../../includes/hdr/swis
+
+        MACRO
+$label  SWI     $swi
+        MOV     w10, #$swi
+        SVC     #0
+        MEND
+
+        END
+

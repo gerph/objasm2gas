@@ -9,7 +9,7 @@
         .asciz "objasm/variables/builtins.s"
 
 // Line number (twice, to see it change) (not objasm, armasm only)
-        .balign
+        .balign 4
         .word     14
         .word     15
 

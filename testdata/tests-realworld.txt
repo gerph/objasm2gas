@@ -1,0 +1,21 @@
+##
+# Tests for real world sources
+#
+
+
+Group: AArch64
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.o --inline --64 --gas "$AS64"
+Expect: expect/$ARG1
+Replace: expect/tool_replacements
+
+Test: ReadC test (Pyro)
+Args: realworldaarch64/readc
+
+
+Group: AArch32
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.o --inline --gas "$AS"
+Expect: expect/$ARG1
+Replace: expect/tool_replacements
+
+Test: ReadC test (Pyro)
+Args: realworld/readc

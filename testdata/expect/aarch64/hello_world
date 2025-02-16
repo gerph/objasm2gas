@@ -38,7 +38,7 @@ bad_return:
 message:
         .asciz "Hello world"
 end:
-        .balign
+        .balign 4
 
 return_wrong:
         .word     1

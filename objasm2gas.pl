@@ -35,6 +35,9 @@ Options:
         --gas=<as-executable>   GNU Assembler to invoke to create ELF file, after
                                 conversion
         --bin                   When used with --gas, create a binary file
+        --util                  Create a Utility file, using 'riscos64-link'
+        --aif                   Create a AIF Absolute file, using 'riscos64-link'
+        --rmf                   Create a Relocatable Module file, using 'riscos64-link'
         --predefine=<statement> Pre-execute a SETA, SETL or SETS directive.
         --line-map=<file>       Specify a mapping file for output lines to source lines
     -i <paths>                  Comma separated list of paths to include
@@ -111,6 +114,7 @@ our $opt_simplecond  = 0;
 our $opt_testexpr    = 0;
 our $opt_gastool     = undef;
 our $opt_gasbin      = 0;
+our $opt_gasbintype  = undef;
 our $opt_linemap     = undef;
 
 # directives that don't have any labels
@@ -648,6 +652,9 @@ GetOptions(
     "line-map=s"    => \$opt_linemap,
     "gas=s"         => \$opt_gastool,
     "bin"           => \$opt_gasbin,
+    "rmf"           => sub { $opt_gasbintype = 'rmf'; },
+    "util"          => sub { $opt_gasbintype = 'util'; },
+    "aif"           => sub { $opt_gasbintype = 'aif'; },
     "predefine=s"   => sub {
             my ($switch, $arg) = @_;
             if ($arg =~ /^(\w+)\s+SET([ALS])\s+(.*)$/)
@@ -707,6 +714,11 @@ elsif (scalar(@output_files) > 0 && $#input_files != $#output_files && !$opt_tes
 elsif ($output_suffix !~ /^\.*\w+$/ && !$opt_testexpr) {
     exit_error($ERR_ARGV, "$toolname".
         ": Invalid suffix '$output_suffix'");
+}
+
+if (defined $opt_gasbintype)
+{
+    $opt_gasbin = 1;
 }
 
 # pair input & output files
@@ -885,15 +897,25 @@ sub assemble_file
     if ($binoutput)
     {
         # after assembling the ELF they want to link as a binary.
-        my $objcopy = $gas;
-        if ($objcopy =~ s/as$/objcopy/)
-        {}
+        if (defined $opt_gasbintype)
+        {
+            # They wanted a specific type; which means we need to use the
+            # linker.
+            my $linker = "riscos64-link -$opt_gasbintype";
+            $cmd = "$linker -o $binoutput $elfoutput";
+        }
         else
         {
-            unlink $elfoutput;
-            exit_error($ERR_IO, "$toolname: $output: Cannot infer 'objcopy' command");
+            my $objcopy = $gas;
+            if ($objcopy =~ s/as$/objcopy/)
+            {}
+            else
+            {
+                unlink $elfoutput;
+                exit_error($ERR_IO, "$toolname: $output: Cannot infer 'objcopy' command");
+            }
+            $cmd = "$objcopy -O binary $elfoutput $binoutput";
         }
-        $cmd = "$objcopy -O binary $elfoutput $binoutput";
         msg_info("Linking with: $cmd");
         if (system($cmd))
         {
@@ -2275,6 +2297,10 @@ sub single_line_conv {
     if ($line =~ s/\b($misc_op_re)\b/$misc_op{$1}/eg)
     {
         $line = expand_variables($line);
+        if ($line !~ /\s+\.balign\s+[^0-9]/)
+        {
+            $line =~ s/(\s+\.balign)(\s+[^0-9]|\s*$)/$1 4$2/;
+        }
     }
 
     # ------ Conversion: labels on instructions ------

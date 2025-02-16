@@ -248,3 +248,4 @@ Args: aarch64/hello_world
 
 
 Include: tests-errors.txt
+Include: tests-realworld.txt
