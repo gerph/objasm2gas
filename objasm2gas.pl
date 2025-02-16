@@ -36,6 +36,7 @@ Options:
                                 conversion
         --bin                   When used with --gas, create a binary file
         --predefine=<statement> Pre-execute a SETA, SETL or SETS directive.
+        --line-map=<file>       Specify a mapping file for output lines to source lines
     -i <paths>                  Comma separated list of paths to include
     --32                        Select 32bit mode
     --64                        Select 64bit mode
@@ -110,6 +111,7 @@ our $opt_simplecond  = 0;
 our $opt_testexpr    = 0;
 our $opt_gastool     = undef;
 our $opt_gasbin      = 0;
+our $opt_linemap     = undef;
 
 # directives that don't have any labels
 our %cmd_withoutlabel = map { $_ => 1  } (
@@ -643,6 +645,7 @@ GetOptions(
     "inline"        => \$opt_inline,
     "simple-conditions" => \$opt_simplecond,
     "test-expr=s"   => \$opt_testexpr,
+    "line-map=s"    => \$opt_linemap,
     "gas=s"         => \$opt_gastool,
     "bin"           => \$opt_gasbin,
     "predefine=s"   => sub {
@@ -771,12 +774,12 @@ foreach (keys %in_out_files) {
     {
         if ($opt_gastool)
         {
-            exit_error($ERR_SYNTAX, "$toolname".": Cannot write to stdout when assembling output")
+            exit_error($ERR_SYNTAX, "$toolname: Cannot write to stdout when assembling output")
         }
 
         # Write to the stdout stream
         open($f_out, ">&", STDOUT)
-            or exit_error($ERR_IO, "$toolname".": <STDOUT>: $!");
+            or exit_error($ERR_IO, "$toolname: <STDOUT>: $!");
     }
     else
     {
@@ -786,19 +789,19 @@ foreach (keys %in_out_files) {
             $out_file = "$in_file.gas";
         }
         open($f_out, ">", $out_file)
-            or exit_error($ERR_IO, "$toolname".": $out_file: $!");
+            or exit_error($ERR_IO, "$toolname: $out_file: $!");
         $writing = $out_file;
     }
 
     open(my $f_in, "<", $_)
-        or exit_error($ERR_IO, "$toolname".": $in_file: $!");
+        or exit_error($ERR_IO, "$toolname: $in_file: $!");
 
     process_file($f_in, $in_file, undef);
     $context = "$in_file";
 
     if (defined $macroname)
     {
-        exit_error($ERR_SYNTAX, "$toolname".": $in_file: Macro '$macroname' not ended at end of file")
+        exit_error($ERR_SYNTAX, "$toolname: $in_file: Macro '$macroname' not ended at end of file")
     }
     if ($builtins{'AREANAME'} eq 'NONE')
     {
@@ -806,8 +809,21 @@ foreach (keys %in_out_files) {
             ": AREA directive not used");
     }
 
-    close $f_in  or exit_error($ERR_IO, "$toolname".": $in_file: $!");
-    close $f_out or exit_error($ERR_IO, "$toolname".": $out_file: $!");
+    close $f_in  or exit_error($ERR_IO, "$toolname: $in_file: $!");
+    close $f_out or exit_error($ERR_IO, "$toolname: $out_file: $!");
+
+    if ($opt_linemap)
+    {
+        # Produce a line mapping file
+        open(my $f_lm, ">", $opt_linemap) || exit_error($ERR_IO, "$toolname: Cannot write line mapping file '$opt_linemap': $!");
+        our $linemapping;
+        for my $line (sort { $a <=> $b } keys %linemapping)
+        {
+            my $lineis = $linemapping{$line};
+            print $f_lm "$line: $lineis\n";
+        }
+        close($f_lm);
+    }
 
     if ($opt_gastool && $out_file ne '-')
     {
@@ -875,14 +891,14 @@ sub assemble_file
         else
         {
             unlink $elfoutput;
-            exit_error($ERR_IO, "$toolname".": $output: Cannot infer 'objcopy' command");
+            exit_error($ERR_IO, "$toolname: $output: Cannot infer 'objcopy' command");
         }
         $cmd = "$objcopy -O binary $elfoutput $binoutput";
         msg_info("Linking with: $cmd");
         if (system($cmd))
         {
             unlink $elfoutput;
-            exit_error($ERR_IO, "$toolname".": $output: Failed to link into a binary");
+            exit_error($ERR_IO, "$toolname: $output: Failed to link into a binary");
         }
         unlink $elfoutput;
     }
@@ -928,14 +944,15 @@ sub process_file {
         if (defined $outputline)
         {
             print $f_out "$outputline\n";
-            my @nlines = ($outputline =~ m/\n/g);
+            my @nlines = split /\n/, $outputline, -1;
+            @nlines = ('') if ($outputline eq '');
             #print "$linenum_output : ".(scalar(@nlines)) . "\n";
-            for my $i (0..scalar(@nlines))
+            for my $i (0..scalar(@nlines)-1)
             {
                 #print "$i => $linecontext\n";
-                $linemapping{$linenum_output + $i} = $linecontext;
+                $linemapping{$linenum_output + $i} = $linecontext; # . " : $nlines[$i]";
             }
-            $linenum_output += scalar(@nlines) + 1;
+            $linenum_output += scalar(@nlines);
         }
     }
     print $f_out "\n";  # required by as
@@ -1022,7 +1039,7 @@ sub resolve_filename {
         my $pathref = expand_paths($pathvar);
         if (!defined $pathref)
         {
-            exit_error($ERR_IO, "$toolname".": $filename: Cannot expand RISC OS path/directory variables")
+            exit_error($ERR_IO, "$toolname: $filename: Cannot expand RISC OS path/directory variables")
         }
         @paths = @$pathref;
         $filename = $suffix;
@@ -1112,7 +1129,7 @@ sub resolve_filename {
         }
     }
 
-    exit_error($ERR_IO, "$toolname".": $filename: Cannot find file (searched paths: " . (join ", ", @paths) . ")");
+    exit_error($ERR_IO, "$toolname: $filename: Cannot find file (searched paths: " . (join ", ", @paths) . ")");
 }
 
 
@@ -1122,11 +1139,11 @@ sub include_file {
     $filename = resolve_filename($filename);
 
     open(my $f_in, "<", $filename)
-        or exit_error($ERR_IO, "$toolname".": $filename: $!");
+        or exit_error($ERR_IO, "$toolname: $filename: $!");
 
     process_file($f_in, $filename);
 
-    close $f_in  or exit_error($ERR_IO, "$toolname".": $filename: $!");
+    close $f_in  or exit_error($ERR_IO, "$toolname: $filename: $!");
 }
 
 
@@ -1167,11 +1184,10 @@ sub expand_macro {
         }
         elsif ($valueparse =~ s/^([\-0-9a-zA-Z_]+)\s*(,|$)/$2/)
         {
-            # Should be either an empty string or a value
             print "Simple value '$1'\n" if ($debug_macros);
             push @valuelist, $1;
         }
-        elsif ($valueparse =~ s/^,//)
+        elsif ($valueparse =~ s/^,/,/)
         {
             print "Empty value\n" if ($debug_macros);
             push @valuelist, '';
@@ -1294,16 +1310,16 @@ sub expand_macro {
         if (defined $outputline)
         {
             print $f_out "$outputline\n";
-            my @nlines = ($outputline =~ m/\n/g);
-            for my $i (0..scalar(@nlines))
+            my @nlines = split /\n/, $outputline, -1;
+            @nlines = ('') if ($outputline eq '');
+            for my $i (0..scalar(@nlines)-1)
             {
                 #print "$i => $linecontext\n";
-                $linemapping{$linenum_output + $i} = $linecontext;
+                $linemapping{$linenum_output + $i} = $linecontext; # . " : $nlines[$i]";
             }
-            $linenum_output += scalar(@nlines) + 1;
+            $linenum_output += scalar(@nlines);
         }
     }
-    $linenum_output += 1;
 
     # Leaving the macro
     # ... so pop the label stack

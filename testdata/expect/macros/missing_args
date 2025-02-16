@@ -1,0 +1,46 @@
+
+        .section    .text, "ax"
+
+
+// ---
+// --- (commas)
+
+// X--
+        .ascii "A: "
+        .byte 15
+
+// -X-
+        .ascii "B: "
+        .byte 30
+
+// XX-
+        .ascii "A: "
+        .byte 15
+        .ascii "B: "
+        .byte 30
+
+// --X
+        .ascii "C: "
+        .byte 45
+
+// X-X
+        .ascii "A: "
+        .byte 15
+        .ascii "C: "
+        .byte 45
+
+// -XX
+        .ascii "B: "
+        .byte 30
+        .ascii "C: "
+        .byte 45
+
+// XXX
+        .ascii "A: "
+        .byte 15
+        .ascii "B: "
+        .byte 30
+        .ascii "C: "
+        .byte 45
+
+
