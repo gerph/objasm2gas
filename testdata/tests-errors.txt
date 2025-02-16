@@ -14,3 +14,21 @@ Args: errors/bad_instruction
 
 Test: Invalid instruction in macro
 Args: errors/macro
+
+
+Group: CLI errors
+
+Test: File not found
+Command: $TOOL objasm/notfound.s -o gas/notfound.s
+Expect: expect/cli-notfound
+RC: 2
+
+Test: Bad directory input
+Command: $TOOL objasm/nodir/notfound.s -o objasm/nodir/notfound.gas
+Expect: expect/cli-baddir
+RC: 2
+
+Test: Bad directory output
+Command: $TOOL objasm/misc/empty.s -o objasm/nodir/notfound.gas
+Expect: expect/cli-badoutput
+RC: 2

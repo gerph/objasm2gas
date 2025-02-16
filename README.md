@@ -2,7 +2,7 @@
 
 <div align="center">
 <p>
-      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.3-brightgreen"></a>
+      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.4-brightgreen"></a>
       <a href="https://github.com/gerph/objasm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
 </p>
 </div>

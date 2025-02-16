@@ -25,7 +25,7 @@ for arg in "$@" ; do
 done
 
 # Ensure that the output directory exists
-if [[ "$output" != '' ]] ; then
+if [[ "$output" != '' && ! "$output" =~ nodir ]] ; then
     mkdir -p "$(dirname "$output")"
     # Also create the expectation directory, if we can.
     expect=${output/gas/expect}

@@ -13,7 +13,7 @@ no warnings qw(portable);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 my $toolname = 'objasm2gas';
-my $ver = '1.3';
+my $ver = '1.4';
 my $helpmsg = <<"USAGE";
 $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
@@ -781,6 +781,9 @@ foreach (keys %in_out_files) {
 
     %linemapping = ();
 
+    open(my $f_in, "<", $_)
+        or exit_error($ERR_IO, "$toolname: Cannot read input '$in_file': $!");
+
     our $f_out;
     if ($out_file eq '-')
     {
@@ -801,12 +804,9 @@ foreach (keys %in_out_files) {
             $out_file = "$in_file.gas";
         }
         open($f_out, ">", $out_file)
-            or exit_error($ERR_IO, "$toolname: $out_file: $!");
+            or exit_error($ERR_IO, "$toolname: Cannot create output '$out_file': $!");
         $writing = $out_file;
     }
-
-    open(my $f_in, "<", $_)
-        or exit_error($ERR_IO, "$toolname: $in_file: $!");
 
     process_file($f_in, $in_file, undef);
     $context = "$in_file";
