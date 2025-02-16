@@ -155,6 +155,9 @@ Args: expressions/literal_operand
 Test: Expression extensions
 Args: expressions/extensions
 
+Test: Character literals
+Args: expressions/charlit
+
 
 
 Group: Miscellaneous

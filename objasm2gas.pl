@@ -2592,6 +2592,12 @@ sub expression
             my $hex_lit = $1;
             $value = hex($hex_lit);
         }
+        elsif ($expr =~ s/^'((?:[^\\]|\\.)*?)'//)
+        {
+            my $char_lit = $1;
+            $char_lit =~ s/^\\(.)/$1/g;
+            $value = ord($char_lit);
+        }
         elsif ($expr =~ s/^((?:\.\d+|\d*\.\d+|\d+)(?:E-?\d+)?)//)
         {
             my $dec_lit = $1;

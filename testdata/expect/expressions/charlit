@@ -1,0 +1,13 @@
+// Test some character literal expressions
+
+    .section .text, "ax"
+
+.set OS_WriteI, 256
+
+// 'A'
+        .byte       65
+
+// OS_WriteI + 'A'
+        MOV     r10, #321
+
+
