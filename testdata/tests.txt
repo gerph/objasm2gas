@@ -70,6 +70,12 @@ Args: data/strings
 Test: Words
 Args: data/words
 
+Test: Words (AArch64)
+Args: data/words
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1_aarch64.s --64
+Creates: gas/$ARG1_aarch64.s
+Text:Matches: expect/$ARG1_aarch64
+
 Test: FP values
 Args: data/floats
 
@@ -114,7 +120,7 @@ Text:Matches: expect/$ARG1
 Test: Builtins
 Args: variables/builtins
 
-Test: Builtins
+Test: Builtins (AArch64)
 Args: variables/builtins_aarch64 --64
 
 Test: Globals

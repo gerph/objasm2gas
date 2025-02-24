@@ -1862,6 +1862,10 @@ sub single_line_conv {
         my @lines = ();
         my @num_accumulator = ();
         my $is_fp = ($op eq '.single' || $op eq '.double');
+        my $and = 0;
+        $and = 0xFFFFFFFF if ($op eq '.word');
+        $and = 0xFFFF if ($op eq '.hword');
+        $and = 0xFF if ($op eq '.byte');
         while ($values ne '')
         {
             my ($value, $nextvalues) = expression($values, $is_fp);
@@ -1907,6 +1911,10 @@ sub single_line_conv {
                 # This is a number, so we want to accumulate it.
                 if (!$is_fp)
                 {
+                    if ($and)
+                    {
+                        $value = $value & $and;
+                    }
                     push @num_accumulator, gas_number($value, 1);
                 }
                 else
