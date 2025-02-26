@@ -43,6 +43,7 @@ Options:
     -i <paths>                  Comma separated list of paths to include
     --32                        Select 32bit mode
     --64                        Select 64bit mode
+    --debug <opts>              Enable debugging options (expr, macros, filename)
 
 Cautions:
     By default (without --strict), for those directives that have no equivalent
@@ -116,6 +117,11 @@ our $opt_gastool     = undef;
 our $opt_gasbin      = 0;
 our $opt_gasbintype  = undef;
 our $opt_linemap     = undef;
+
+# Debug options
+our $debug_macros    = 0;
+our $debug_filename  = 0;
+our $debug_expr      = 0;
 
 # directives that don't have any labels
 our %cmd_withoutlabel = map { $_ => 1  } (
@@ -698,6 +704,23 @@ GetOptions(
         },
     "64" => sub { set_config(64); },
     "32" => sub { set_config(32); },
+    "debug=s" => sub {
+            my ($switch, $arg) = @_;
+            my @list = split / *, */, $arg;
+            for my $a (@list)
+            {
+                if ($a eq 'expr')
+                { $debug_expr = 1; }
+                elsif  ($a eq 'filename')
+                { $debug_filename = 1; }
+                elsif  ($a eq 'macro')
+                { $debug_macros = 1; }
+                else
+                {
+                    exit_error($ERR_SYNTAX, "Unrecognised debug option: '$a'");
+                }
+            }
+        },
 ) or die("Conversion of ObjASM source to GAS source failed\n");
 
 @input_files = @ARGV;
@@ -1046,7 +1069,6 @@ sub expand_paths {
 sub resolve_filename {
     my ($filename) = @_;
     our $in_file;
-    my $debug_filename = 0;
     print "Resolving: $filename\n" if ($debug_filename);
     return $filename if (-f $filename);
 
@@ -1177,7 +1199,7 @@ sub expand_macro {
     our $context;
     my @valuelist;
     my $valueparse=$values;
-    my $debug_macros = 0;
+    my $comment = undef;
 
     msg_info($context.
         ": Expanding macro '$macroname' with args: $values");
@@ -1204,9 +1226,14 @@ sub expand_macro {
             }
             push @valuelist, $val;
         }
-        elsif ($valueparse =~ s/^([\-0-9a-zA-Z_]+)\s*(,|$)/$2/)
+        elsif ($valueparse =~ s/^([\-0-9a-zA-Z_]+)\s*(;|,|$)/$2/)
         {
             print "Simple value '$1'\n" if ($debug_macros);
+            push @valuelist, $1;
+        }
+        elsif ($valueparse =~ s/^('.')\s*(;|,|$)/$2/)
+        {
+            print "Simple char value '$1'\n" if ($debug_macros);
             push @valuelist, $1;
         }
         elsif ($valueparse =~ s/^,/,/)
@@ -1214,28 +1241,24 @@ sub expand_macro {
             print "Empty value\n" if ($debug_macros);
             push @valuelist, '';
         }
-        else
+        elsif ($valueparse =~ s/^([^,;]+)(;|,|$)/$2/)
         {
-            #print "EXPRESSION: $valueparse\n";
-            my ($val, $tail) = expression($valueparse);
-            if (!defined $val)
-            {
-                exit_error($ERR_SYNTAX, "$context".
-                    ": Cannot parse expression at '$valueparse'");
-            }
-            if ($val =~ /^"(.*)"$/)
-            {
-                $val = $1;
-            }
-            print "Expression value: $val\n" if ($debug_macros);
+            my $val = $1;
+            print "Literal value: $val\n" if ($debug_macros);
             push @valuelist, $val;
-            $valueparse = $tail;
         }
         # Remove any training spaces
         $valueparse =~ s/^\s+//;
         if ($valueparse =~ s/^,//)
         {
             # There is another parameter present.
+        }
+        elsif ($valueparse =~ s/^;//)
+        {
+            # There is another parameter present.
+            $comment = $valueparse;
+            print "Comment: $comment\n" if ($debug_macros);
+            last;
         }
         else
         {
@@ -1311,6 +1334,15 @@ sub expand_macro {
     push @label_stack, {'backward'=>{}, 'forward'=>{}, 'rout'=>"_${inrout}_macro_$macroname"};
     # ... and the local variable stack
     push @variable_stack, {};
+
+    if ($comment)
+    {
+        my $outputline = single_line_conv("        ;$comment");
+        if (defined $outputline)
+        {
+            print $f_out "$outputline\n";
+        }
+    }
 
     $in_file = $macrodef->{'base_file'};
     $linenum_input = $macrodef->{'base_line'};
@@ -2227,6 +2259,11 @@ sub single_line_conv {
                 # We've found a constant expression, so we evaluate
                 push @acc, '#';
                 my ($value, $trail) = expression($values);
+                if (!defined $value)
+                {
+                    exit_error($ERR_SYNTAX, $context.
+                        ": Cannot parse expression: '$values'");
+                }
                 push @acc, gas_number($value);
                 $values = $trail;
             }
@@ -2547,7 +2584,6 @@ sub expression
     my ($expr, $is_fp) = @_;
     my $orig = $expr;
     our $context;
-    my $expr_debug = 0;
     $is_fp = 0 if (!defined $is_fp);
 
     # This is not going to be a proper parser for numeric expressions; it's going
@@ -2562,7 +2598,7 @@ sub expression
 
     while ($expr ne '')
     {
-        print "Expression parse: '$expr'\n" if ($expr_debug);
+        print "Expression parse: '$expr'\n" if ($debug_expr);
         if (!defined $left || defined $operator)
         {
             # Monadic operators can only happen if there is no left parameter, or
@@ -2571,7 +2607,7 @@ sub expression
             {
                 my $monoop = $operators_monadic{$1};
                 $monadicstr = defined $monadicstr ? "$monadicstr$1" : $1;
-                print "Monadic operator: $1 (now: $monadicstr)\n" if ($expr_debug);
+                print "Monadic operator: $1 (now: $monadicstr)\n" if ($debug_expr);
                 if (defined $monadic)
                 {
                     # A monadic op has already been seen, so we need to chain these
@@ -2591,7 +2627,7 @@ sub expression
             if ($expr =~ s/^($operators_binary_re)//)
             {
                 my $binop = $operators_binary{$1};
-                print "Binary operator: $1\n" if ($expr_debug);
+                print "Binary operator: $1\n" if ($debug_expr);
                 $operator = $binop;
                 goto next_token;
             }
@@ -2616,7 +2652,7 @@ sub expression
         # Builtins check
         elsif ($expr =~ s/^\{([A-Za-z_][A-Za-z0-9_]*)\}//)
         {
-            print "Builtin: $1\n" if ($expr_debug);
+            print "Builtin: $1\n" if ($debug_expr);
             $value = defined $builtins{$1} ? (ref($builtins{$1}) eq 'CODE' ? $builtins{$1}->() : $builtins{$1}) : 0;
             if ($value =~ m![^0-9]!)
             { $value = '"' . $value . '"'; }
@@ -2725,7 +2761,7 @@ sub expression
         {
             my $right = $value;
             $value = $operator->($left, $right);
-            print " ($left, $right) => $value\n" if ($expr_debug);
+            print " ($left, $right) => $value\n" if ($debug_expr);
             $left = $value;
             $operator = undef;
         }
@@ -2869,6 +2905,14 @@ sub gas_number
     my ($expr, $positive) = @_;
     my $value;
     $positive = $positive // 0;
+
+    if (!defined $expr)
+    {
+        our $context;
+        my ($pkg, $file, $line) = caller;
+        exit_error(128, "$context".
+            ": Internal consistency failure at gas_number: Called with undefined value from $file:$line");
+    }
 
     my $sign = '';
     if ($expr =~ /[^0-9]/)

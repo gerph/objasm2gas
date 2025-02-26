@@ -211,6 +211,9 @@ Args: macros/swi
 Test: Local variables
 Args: macros/locals
 
+Test: Registers as parameters
+Args: macros/register
+
 Test: Missing arguments
 Args: macros/missing_args
 

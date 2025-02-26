@@ -1,0 +1,23 @@
+
+        .section    .text, "ax"
+
+
+// ADD r2,r2,#1
+        ADD     r2, r2, #1
+
+
+
+// ADD r2,r2,#2
+        ADD     r2, r2, #4
+
+
+
+// ADD r2,r2,#16
+        ADD     r2, r2, #16
+
+
+
+// ADD r2,r2,#16
+        ADD     r2, r2, #16
+
+
