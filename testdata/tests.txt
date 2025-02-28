@@ -191,6 +191,15 @@ Test: ifdef/ifndef
 Args: conditions/ifdef
 
 
+Group: Symbols
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Creates: gas/$ARG1.s
+Text:Matches: expect/$ARG1
+
+Test: Special symbols
+Args: symbols/specials
+
+
 Group: Macros
 Command: $TOOL --strict objasm/$ARG1.s -o gas/$ARG1.s
 Creates: gas/$ARG1.s

@@ -1539,8 +1539,8 @@ sub single_line_conv {
                 $val \/\/ $s/ge;
 
     # FIXME: This parse doesn't handle strings with // in.
-    if ($line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/ ||
-        $line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+)?)?()()()()(\s*)(\/\/.*)?$/)
+    if ($line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+|\|[^\|]+\|)?)?(\s+)([^\s]*)(\s*)(.*?)(\s*)(\/\/.*)?$/ ||
+        $line =~ /^((?:[A-Z_a-z0-9][A-Z_a-z0-9]*|[0-9]+|\|[^\|]+\|)?)?()()()()(\s*)(\/\/.*)?$/)
     {
         $label=$1;
         $lspcs=$2;
@@ -1549,6 +1549,11 @@ sub single_line_conv {
         $values=$5;
         $vspcs=$6;
         $comment=$7 // '';
+
+        if ($label =~ /^\|(.*)\|$/)
+        {
+            $label = $1;
+        }
     }
     elsif ($line =~ /^(\s*)(\/\/.*)$/)
     {
@@ -1858,6 +1863,7 @@ sub single_line_conv {
     # Label splitting
     if ($label ne '' and not defined $cmd_notlabel{$cmd})
     {
+        my $newline = '';
         # Labelled statement seen.
         if ($cmd ne '')
         {
@@ -1867,17 +1873,24 @@ sub single_line_conv {
                 exit_error($ERR_SYNTAX, "$context".
                            ": Directive '$cmd' is not allowed to have a label");
             }
-            $line =~ s/^\Q$label\E/' ' x length($label)/e;
-            my $newline = single_line_conv($line);
-            #print "Got back $newline\n";
-            if (defined $newline)
+            $line =~ s/^(\|?\Q$label\E\|?)/' ' x length($1)/e;
+            $newline = single_line_conv($line);
+        }
+        #print "Got back $newline\n";
+        if (defined $newline)
+        {
+            if ($label =~ /[^A-Za-z0-9_]/)
+            {
+                # Label contains special characters
+                $line = ".set \"$label\", .\n$newline";
+            }
+            else
             {
                 $line = "$label:\n$newline";
-                $line =~ s/\s+$//;
-                return $line;
             }
+            $line =~ s/\s+$//;
+            return $line;
         }
-        goto reconstruct;
     }
 
     # Byte/String constants
@@ -2110,8 +2123,7 @@ sub single_line_conv {
         declare_variable($var, $scope, $type);
         if ($scope eq 'G')
         {
-            $line =~ s/GBL$type/.set/i;
-            $line =~ s/$var/"$var, ".$init_val{$type}/ei;
+            $line = "$lspcs.set$cspcs$var, $init_val{$type}$vspcs$comment";
             $line = "$lspcs.global $var\n" . $line;
             return $line;
         }
@@ -2328,10 +2340,20 @@ sub single_line_conv {
 
     # ------ Conversion: misc directives ------
     # weak declaration
-    if ($line =~ m/(EXPORT|GLOBAL|IMPORT|EXTERN)\s+\w+.+\[\s*WEAK\s*\]/i) {
+    if ($line =~ m/(EXPORT|GLOBAL|IMPORT|EXTERN)(\s+)(\w+|\|[^\|]+\|).+\[\s*WEAK\s*\]/i) {
         my $drctv = $1;
-        $line =~ s/$drctv/.weak/i;
-        $line =~ s/,\s*\[\s*WEAK\s*\]//i;
+        my $spcs = $2;
+        my $sym = $3;
+        if ($sym =~ /^\|(.*)\|$/)
+        {
+            $sym = $1;
+        }
+        if ($sym =~ /[^a-zA-Z0-9_]/)
+        {
+            $sym = "\"$sym\"";
+        }
+        $line = ".weak $sym";
+        return $line;
     }
     # INFO directive
     if ($line =~ m/(INFO\s+\d+\s*,)\s*".*"/i) {
@@ -2341,10 +2363,15 @@ sub single_line_conv {
 
     if ($line =~ s/\b($misc_op_re)\b/$misc_op{$1}/eg)
     {
+        my $op = $misc_op{$1};
         $line = expand_variables($line);
         if ($line !~ /\s+\.balign\s+[^0-9]/)
         {
             $line =~ s/(\s+\.balign)(\s+[^0-9]|\s*$)/$1 4$2/;
+        }
+        if ($op eq '.global')
+        {
+            $line =~ s/\|([^\|]+)\|/"$1"/;
         }
     }
 

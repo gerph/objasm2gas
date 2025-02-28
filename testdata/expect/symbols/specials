@@ -1,0 +1,13 @@
+
+// special symbols
+        .section    .text, "ax"
+
+        .global  "Asm$Entry"
+        .global  "Extra$$Entry"
+
+.set "Asm$Entry", .
+        .word     0
+.set "Extra$$Entry", .
+        .word     1
+
+
