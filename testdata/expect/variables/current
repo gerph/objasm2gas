@@ -1,0 +1,15 @@
+
+// Current address in ObjAsm
+
+        .section    .text, "ax"
+
+// Write the value into a word
+        .word     .
+
+// Assign to a constant
+.set here, .
+
+// Branch to the address
+        B       .
+
+

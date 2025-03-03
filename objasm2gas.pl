@@ -1954,7 +1954,7 @@ sub single_line_conv {
             elsif (defined $value)
             {
                 # This is a number, so we want to accumulate it.
-                if (!$is_fp)
+                if (!$is_fp && !is_pc_relative($value))
                 {
                     if ($and)
                     {
@@ -2676,6 +2676,11 @@ sub expression
                     ": Evaluation of variables in '$orig' was missing a closing bracket, instead got '$expr'");
             }
         }
+        # Override for the assembler special '.' or '{PC}'.
+        elsif ($expr =~ s/^(\.(?![0-9])|\{PC})//)
+        {
+            $value = '.';
+        }
         # Builtins check
         elsif ($expr =~ s/^\{([A-Za-z_][A-Za-z0-9_]*)\}//)
         {
@@ -2919,6 +2924,22 @@ sub evaluate
     return $value;
 }
 
+##
+# Value is PC relative?
+#
+# @param[in] $value:        Value to check
+#
+# @return:  True if this is PC relative.
+sub is_pc_relative
+{
+    my ($value) = @_;
+    if ($value eq '.' || $value =~ /\.\s*[-+]/ || $value =~ /[+-]\s*\./)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 
 ##
 # Convert a numeric value to a GAS value
@@ -2939,6 +2960,11 @@ sub gas_number
         my ($pkg, $file, $line) = caller;
         exit_error(128, "$context".
             ": Internal consistency failure at gas_number: Called with undefined value from $file:$line");
+    }
+    if (is_pc_relative($expr))
+    {
+        # Pass a PC-relative string through
+        return $expr;
     }
 
     my $sign = '';
