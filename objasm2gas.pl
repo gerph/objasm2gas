@@ -2623,6 +2623,39 @@ sub expression
     # Trim the leading spaces so that we can expand things easier
     $expr =~ s/^\s+//;
 
+    # Try to catch PC-relative expressions that we cannot handle.
+    if ($expr eq '.' || $expr eq '{PC}')
+    {
+        return ('.', '');
+    }
+    if (is_pc_relative($expr))
+    {
+        $expr =~ s/\{PC}/ . /g;
+        while (1)
+        {
+            my $oldexpr = $expr;
+            $expr =~ s/\(([^).]+)\)/my $bracket = $1;
+                                    my ($result, $tail) = expression($1);
+                                    if ($tail)
+                                    {
+                                       "($bracket)";
+                                    }
+                                    else
+                                    {
+                                       "$result";
+                                    }
+                                   /ge;
+            if ($expr eq $oldexpr)
+            {
+                last;
+            }
+        }
+        $expr =~ s/^\s+//;
+        $expr =~ s/\s+$//;
+        $expr =~ s/\s\s+/ /;
+        return ($expr, '');
+    }
+
     while ($expr ne '')
     {
         print "Expression parse: '$expr'\n" if ($debug_expr);
@@ -2762,9 +2795,18 @@ sub expression
                 }
                 else
                 {
-                    # Variable isn't recognised.
-                    exit_error($ERR_SYNTAX, "$context".
-                        ": Evaluation of variables in '$orig' could not find a value for '$name' at '$expr'");
+                    if (0)
+                    {
+                        # Variable isn't recognised.
+                        exit_error($ERR_SYNTAX, "$context".
+                            ": Evaluation of variables in '$orig' could not find a value for '$name' at '$expr'");
+                    }
+                    else
+                    {
+                        # The variable is probably a label. We will need to pass through this
+                        # expression unmodified.
+                        return ($orig, '');
+                    }
                 }
             }
         }
@@ -2933,7 +2975,7 @@ sub evaluate
 sub is_pc_relative
 {
     my ($value) = @_;
-    if ($value eq '.' || $value =~ /\.\s*[-+]/ || $value =~ /[+-]\s*\./)
+    if ($value eq '.' || $value =~ /\.\s*[-+]/ || $value =~ /[+-]\s*\./ || $value =~ /\{PC}/)
     {
         return 1;
     }
