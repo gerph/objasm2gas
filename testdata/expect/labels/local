@@ -20,12 +20,12 @@ Lrout__local_20_2:
 
 
 // Forward references
-        B       Lrout__local_30_2
-        B       Lrout__local_30_2       // reuse of FT30
+        B       Lrout__local_30_3
+        B       Lrout__local_30_3       // reuse of FT30
         B       Lrout__local_30_1       // back to the prior 30
 
 // this is the 30 we went forward to
-Lrout__local_30_2:
-        B       Lrout__local_30_2       // back to the 30 we just created
+Lrout__local_30_3:
+        B       Lrout__local_30_3       // back to the 30 we just created
 
 

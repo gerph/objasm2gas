@@ -51,6 +51,9 @@ Args: labels/plain
 Test: Local labels
 Args: labels/local
 
+Test: Local labels forward
+Args: labels/local_forward
+
 Test: Local labels that use ROUT
 Args: labels/local_rout
 

@@ -1,0 +1,19 @@
+
+// Local labels, going forward
+
+
+// Refer forwars to it
+        B       Lrout__local_30_1
+
+Lrout__local_30_1:
+        MOV     r0, #0
+
+
+// now refer forwards to the next 30 label
+        B       Lrout__local_30_2
+
+// second definition of the label
+Lrout__local_30_2:
+        MOV     r0, #1
+
+

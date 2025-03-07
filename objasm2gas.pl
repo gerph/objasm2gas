@@ -1842,9 +1842,19 @@ sub single_line_conv {
             }
 
             # IF the symbol was not found we need to create the symbol name we will use.
-            my $label_rout = $label_stack[-1]->{'rout'};
-            $symbol = "L${label_rout}__local_${number}_$label_sequence";
-            $label_stack[-1]->{'forward'}->{$number} = $symbol;
+            if (!defined $symbol)
+            {
+                # Increment the sequence if this replaces a prior label name
+                # FIXME: Full search of the scoping here?
+                if (defined $label_stack[-1]->{'backward'}->{$number})
+                {
+                    $label_sequence++;
+                }
+
+                my $label_rout = $label_stack[-1]->{'rout'};
+                $symbol = "L${label_rout}__local_${number}_$label_sequence";
+                $label_stack[-1]->{'forward'}->{$number} = $symbol;
+            }
         }
 
         if (!defined $symbol)
