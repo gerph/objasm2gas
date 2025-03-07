@@ -1356,7 +1356,29 @@ sub expand_macro {
         # Perform the substitutions
         if ($macroline =~ /\$/)
         {
-            $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)\.?/$macrovars{$1} \/\/ "$1"/ge;
+            $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)(\.?)/my ($l, $dot) = ($1, $2);
+                                                            my $v = $macrovars{$l};
+                                                            if (!defined $v)
+                                                            {
+                                                                "$l$dot";
+                                                            }
+                                                            else
+                                                            {
+                                                                if (defined $macrodef->{'label'} &&
+                                                                    $l eq $macrodef->{'label'} &&
+                                                                    $dot eq '' &&
+                                                                    $-[1] == 0)
+                                                                {
+                                                                    my $ll = length($macrodef->{'label'});
+                                                                    my $vl = length($v);
+                                                                    if (($ll - $vl) > 0)
+                                                                    {
+                                                                        $v = $v . (' ' x ($ll - $vl));
+                                                                    }
+                                                                }
+                                                                $v;
+                                                            }
+                                                            /ge;
         }
 
         #print "Macroline: $macroline\n";
@@ -1439,8 +1461,8 @@ sub single_line_conv {
         if ($macroname eq '1')
         {
             # This is the first line after the MACRO, which defines what the macro is.
-            if ($line =~ /^(?:(\$[a-zA-Z_]\w*))?\s*(\w+)\s*(.*?)(\/\/.*)?$/) {
-                my ($label, $name, $args, $comment) = ($1, $2, $3, $4);
+            if ($line =~ /^(?:(\$[a-zA-Z_]\w*))?(\s*)(\w+)\s*(.*?)(\/\/.*)?$/) {
+                my ($label, $lspcs, $name, $args, $comment) = ($1, $2, $3, $4, $5);
                 $macroname = $name;
                 my @arglist = split /\s*,\s*/, $args;
                 my @defaultlist;
@@ -1465,6 +1487,7 @@ sub single_line_conv {
                 $macros{$macroname} = {
                         'lines' => [],
                         'label' => $label,
+                        'indent' => defined($label) ? length($label . $lspcs) : length($lspcs),
                         'params' => \@arglist,
                         'defaults' => \@defaultlist,
                         'comment' => $comment,
@@ -2635,7 +2658,7 @@ sub expression
         {
             my $oldexpr = $expr;
             $expr =~ s/\(([^).]+)\)/my $bracket = $1;
-                                    my ($result, $tail) = expression($1);
+                                    my ($result, $tail) = expression($bracket);
                                     if ($tail)
                                     {
                                        "($bracket)";
@@ -2656,6 +2679,7 @@ sub expression
         return ($expr, '');
     }
 
+    # Now the full expression parser
     while ($expr ne '')
     {
         print "Expression parse: '$expr'\n" if ($debug_expr);
