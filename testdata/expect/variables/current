@@ -1,0 +1,39 @@
+
+// Current address in ObjAsm
+
+        .section    .text, "ax"
+
+// Write the value into a word
+        .word     .
+
+// Write the value into a word (b)
+        .word     .
+
+// Assign to a constant
+.set here, .
+
+// Branch to the address
+        B       .
+
+// Relative positions as a table
+table:
+        .word     target - .
+target:
+
+
+// Unlablled branch
+        B       . + 8
+
+// Extra expression (1)
+        .word     . + 16
+
+// Extra expression (1b)
+        .word     . + 16
+
+// Extra expression (2)
+        .word     8 + (target - .)
+
+// Extra expression (2b)
+        .word     8 + (target - . )
+
+

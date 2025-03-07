@@ -134,6 +134,10 @@ Test: Predefine x 2
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s --predefine "VARIABLE SETS \"hello\"" --predefine "SECOND SETS \"there\""
 Args: variables/predefine2
 
+Test: Current PC
+Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s
+Args: variables/current
+
 
 Group: Expressions
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s

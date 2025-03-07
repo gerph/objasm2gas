@@ -17,15 +17,15 @@
 
 
 // Push registers x0
-  STR     x0, [sp, #-16]!
+        STR     x0, [sp, #-16]!
 // Push registers x0, x1
-  STP     x0,x1, [sp, #-16]!
+        STP     x0,x1, [sp, #-16]!
 // Push registers x0, x1, x2
-  STP     x1,x2, [sp, #-16]!
-  STR     x0, [sp, #-16]!
+        STP     x1,x2, [sp, #-16]!
+        STR     x0, [sp, #-16]!
 // Push registers x0, x1, x2, x3
-  STP     x2,x3, [sp, #-16]!
-  STP     x0,x1, [sp, #-16]!
+        STP     x2,x3, [sp, #-16]!
+        STP     x0,x1, [sp, #-16]!
 
 //------
 // Pull registers x0
@@ -47,7 +47,7 @@
 //------
 // Entry/Exit (none)
 .set entry_reglist, ""
-  STP     x29,lr, [sp, #-16]!
+        STP     x29,lr, [sp, #-16]!
         MOV     x29, sp
 
         LDP     x29,lr, [sp], #16
@@ -55,9 +55,9 @@
 
 // Entry/Exit x0
 .set entry_reglist, "x0"
-  STP     x29,lr, [sp, #-16]!
+        STP     x29,lr, [sp, #-16]!
         MOV     x29, sp
-  STR     x0, [sp, #-16]!
+        STR     x0, [sp, #-16]!
 
         LDR     x0, [sp], #16
         LDP     x29,lr, [sp], #16
@@ -65,9 +65,9 @@
 
 // Entry/Exit x0, x1
 .set entry_reglist, "x0, x1"
-  STP     x29,lr, [sp, #-16]!
+        STP     x29,lr, [sp, #-16]!
         MOV     x29, sp
-  STP     x0,x1, [sp, #-16]!
+        STP     x0,x1, [sp, #-16]!
 
         LDP     x0,x1, [sp], #16
         LDP     x29,lr, [sp], #16
@@ -75,10 +75,10 @@
 
 // Entry/Exit x0, x1, x2
 .set entry_reglist, "x0-x2"
-  STP     x29,lr, [sp, #-16]!
+        STP     x29,lr, [sp, #-16]!
         MOV     x29, sp
-  STP     x1,x2, [sp, #-16]!
-  STR     x0, [sp, #-16]!
+        STP     x1,x2, [sp, #-16]!
+        STR     x0, [sp, #-16]!
 
         LDR     x0, [sp], #16
         LDP     x1,x2, [sp], #16

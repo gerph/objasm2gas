@@ -1356,7 +1356,29 @@ sub expand_macro {
         # Perform the substitutions
         if ($macroline =~ /\$/)
         {
-            $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)\.?/$macrovars{$1} \/\/ "$1"/ge;
+            $macroline =~ s/(\$[A-Za-z_][A-Za-z0-9_]*)(\.?)/my ($l, $dot) = ($1, $2);
+                                                            my $v = $macrovars{$l};
+                                                            if (!defined $v)
+                                                            {
+                                                                "$l$dot";
+                                                            }
+                                                            else
+                                                            {
+                                                                if (defined $macrodef->{'label'} &&
+                                                                    $l eq $macrodef->{'label'} &&
+                                                                    $dot eq '' &&
+                                                                    $-[1] == 0)
+                                                                {
+                                                                    my $ll = length($macrodef->{'label'});
+                                                                    my $vl = length($v);
+                                                                    if (($ll - $vl) > 0)
+                                                                    {
+                                                                        $v = $v . (' ' x ($ll - $vl));
+                                                                    }
+                                                                }
+                                                                $v;
+                                                            }
+                                                            /ge;
         }
 
         #print "Macroline: $macroline\n";
@@ -1439,8 +1461,8 @@ sub single_line_conv {
         if ($macroname eq '1')
         {
             # This is the first line after the MACRO, which defines what the macro is.
-            if ($line =~ /^(?:(\$[a-zA-Z_]\w*))?\s*(\w+)\s*(.*?)(\/\/.*)?$/) {
-                my ($label, $name, $args, $comment) = ($1, $2, $3, $4);
+            if ($line =~ /^(?:(\$[a-zA-Z_]\w*))?(\s*)(\w+)\s*(.*?)(\/\/.*)?$/) {
+                my ($label, $lspcs, $name, $args, $comment) = ($1, $2, $3, $4, $5);
                 $macroname = $name;
                 my @arglist = split /\s*,\s*/, $args;
                 my @defaultlist;
@@ -1465,6 +1487,7 @@ sub single_line_conv {
                 $macros{$macroname} = {
                         'lines' => [],
                         'label' => $label,
+                        'indent' => defined($label) ? length($label . $lspcs) : length($lspcs),
                         'params' => \@arglist,
                         'defaults' => \@defaultlist,
                         'comment' => $comment,
@@ -1954,7 +1977,7 @@ sub single_line_conv {
             elsif (defined $value)
             {
                 # This is a number, so we want to accumulate it.
-                if (!$is_fp)
+                if (!$is_fp && !is_pc_relative($value))
                 {
                     if ($and)
                     {
@@ -2623,6 +2646,40 @@ sub expression
     # Trim the leading spaces so that we can expand things easier
     $expr =~ s/^\s+//;
 
+    # Try to catch PC-relative expressions that we cannot handle.
+    if ($expr eq '.' || $expr eq '{PC}')
+    {
+        return ('.', '');
+    }
+    if (is_pc_relative($expr))
+    {
+        $expr =~ s/\{PC}/ . /g;
+        while (1)
+        {
+            my $oldexpr = $expr;
+            $expr =~ s/\(([^).]+)\)/my $bracket = $1;
+                                    my ($result, $tail) = expression($bracket);
+                                    if ($tail)
+                                    {
+                                       "($bracket)";
+                                    }
+                                    else
+                                    {
+                                       "$result";
+                                    }
+                                   /ge;
+            if ($expr eq $oldexpr)
+            {
+                last;
+            }
+        }
+        $expr =~ s/^\s+//;
+        $expr =~ s/\s+$//;
+        $expr =~ s/\s\s+/ /;
+        return ($expr, '');
+    }
+
+    # Now the full expression parser
     while ($expr ne '')
     {
         print "Expression parse: '$expr'\n" if ($debug_expr);
@@ -2675,6 +2732,11 @@ sub expression
                 exit_error($ERR_SYNTAX, "$context".
                     ": Evaluation of variables in '$orig' was missing a closing bracket, instead got '$expr'");
             }
+        }
+        # Override for the assembler special '.' or '{PC}'.
+        elsif ($expr =~ s/^(\.(?![0-9])|\{PC})//)
+        {
+            $value = '.';
         }
         # Builtins check
         elsif ($expr =~ s/^\{([A-Za-z_][A-Za-z0-9_]*)\}//)
@@ -2757,9 +2819,18 @@ sub expression
                 }
                 else
                 {
-                    # Variable isn't recognised.
-                    exit_error($ERR_SYNTAX, "$context".
-                        ": Evaluation of variables in '$orig' could not find a value for '$name' at '$expr'");
+                    if (0)
+                    {
+                        # Variable isn't recognised.
+                        exit_error($ERR_SYNTAX, "$context".
+                            ": Evaluation of variables in '$orig' could not find a value for '$name' at '$expr'");
+                    }
+                    else
+                    {
+                        # The variable is probably a label. We will need to pass through this
+                        # expression unmodified.
+                        return ($orig, '');
+                    }
                 }
             }
         }
@@ -2919,6 +2990,22 @@ sub evaluate
     return $value;
 }
 
+##
+# Value is PC relative?
+#
+# @param[in] $value:        Value to check
+#
+# @return:  True if this is PC relative.
+sub is_pc_relative
+{
+    my ($value) = @_;
+    if ($value eq '.' || $value =~ /\.\s*[-+]/ || $value =~ /[+-]\s*\./ || $value =~ /\{PC}/)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 
 ##
 # Convert a numeric value to a GAS value
@@ -2939,6 +3026,11 @@ sub gas_number
         my ($pkg, $file, $line) = caller;
         exit_error(128, "$context".
             ": Internal consistency failure at gas_number: Called with undefined value from $file:$line");
+    }
+    if (is_pc_relative($expr))
+    {
+        # Pass a PC-relative string through
+        return $expr;
     }
 
     my $sign = '';
