@@ -1215,7 +1215,7 @@ sub expand_macro {
     while ($valueparse ne '')
     {
         next if ($valueparse =~ s/^\s+//);
-        if ($valueparse =~ s/^((?:"[^"]*"[^,]*)+?)\s*(,|$)//)
+        if ($valueparse =~ s/^((?:"[^"]*"[^,]*)+?)\s*(,|$)/$2/)
         {
             # Quoted string.
             print "Quoted value '$1'\n" if ($debug_macros);
@@ -1226,7 +1226,7 @@ sub expand_macro {
             }
             push @valuelist, $val;
         }
-        elsif ($valueparse =~ s/^([\-0-9a-zA-Z_]+)\s*(;|,|$)/$2/)
+        elsif ($valueparse =~ s/^([0-9a-zA-Z_\-]+)\s*(;|,|$)/$2/)
         {
             print "Simple value '$1'\n" if ($debug_macros);
             push @valuelist, $1;
