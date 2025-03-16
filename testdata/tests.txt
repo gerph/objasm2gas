@@ -221,6 +221,10 @@ Args: macros/args_2
 Test: Real world signature
 Args: macros/signature
 
+Test: Real world print message
+Command: $TOOL --64 --strict objasm/$ARG1.s -o gas/$ARG1.s
+Args: macros/aarch64_printmessage
+
 Test: SWI alias
 Args: macros/swi
 
