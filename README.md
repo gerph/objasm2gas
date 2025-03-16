@@ -2,7 +2,7 @@
 
 <div align="center">
 <p>
-      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.4-brightgreen"></a>
+      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.5-brightgreen"></a>
       <a href="https://github.com/gerph/objasm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
 </p>
 </div>
@@ -32,12 +32,14 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 | `--gas=<gas-binary>`    | GNU `as` to invoke to create ELF file, after conversion; output file will be the output from GNU `as` |
 | `--bin`                 | When used with `--gas`, create a binary file (default is to produce an ELF file) |
 | `--predefine=<asm>`     | Pre-execute a SETA, SETL or SETS directive.             |
+| `--line-map=<file>`     | Output a map of output file line numbers to source lines. |
 | `-i <paths>`            | Comma separated list of paths to search for inclues     |
 | `--32`                  | Select 32 bit mode                                      |
 | `--64`                  | Select 64 bit mode                                      |
 | `--util`                | Create a Utility file, using 'riscos64-link' |
 | `--aif`                 | Create a AIF Absolute file, using 'riscos64-link' |
 | `--rmf`                 | Create a Relocatable Module file, using 'riscos64-link' |
+| `--debug=<opts>`        | Selective enabling of debug options |
 
 
 
@@ -99,6 +101,9 @@ INFO: demo/demo.s:33 -> demo/demo.s.out:37: Converting '2_11001010' to hexadecim
 By default (without `--strict`), for those directives that have no equivalent GNU format, `objasm2gas` will try best to convert and generate warning information on the specific line. Therefore, a 'warning' does **NOT** necessarily mean no issue, please check the conversion result to ensure it works as expected.
 
 Note that `objasm2gas` *assumes that the input file is in the **correct** syntax*, otherwise, the conversion result is **UNEXPECTED**
+
+Use of `.` or `{PC}` may be unreliable in some circumstances. Try to simplify your expressions if
+possible.
 
 ## TODO
 
