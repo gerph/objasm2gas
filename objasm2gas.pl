@@ -1241,7 +1241,7 @@ sub expand_macro {
             print "Empty value\n" if ($debug_macros);
             push @valuelist, '';
         }
-        elsif ($valueparse =~ s/^([^,;]+)(;|,|$)/$2/)
+        elsif ($valueparse =~ s/^((?:[^',;]+|(?<!\\)'.'|(?<!\\)"[^"]")+)(;|,|$)/$2/)
         {
             my $val = $1;
             print "Literal value: $val\n" if ($debug_macros);
