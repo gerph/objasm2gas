@@ -1987,7 +1987,7 @@ sub single_line_conv {
             elsif (defined $value)
             {
                 # This is a number, so we want to accumulate it.
-                if (!$is_fp && !is_pc_relative($value))
+                if (!$is_fp && !is_pc_relative($value) && $value =~ /^-?[0-9]+|-?0x[0-9a-fA-F]+$/)
                 {
                     if ($and)
                     {
@@ -1997,7 +1997,7 @@ sub single_line_conv {
                 }
                 else
                 {
-                    # FP numbers are left alone
+                    # FP numbers and non-numbers are left alone
                     push @num_accumulator, $value;
                 }
             }
