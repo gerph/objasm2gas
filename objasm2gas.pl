@@ -260,8 +260,6 @@ our %operators_binary = (
     ":CC:"   => sub { my ($left, $right) = @_; return '"'. unstr($left) . unstr($right) .'"' },
     # FIXME: We don't support:
     #   ?symbol
-    #   :BASE:
-    #   :INDEX:
     #   :LNOT:
     #   :RCONST:
     #   :CC_ENCODING:
@@ -397,6 +395,23 @@ our %operators_monadic = (
     ":LOWERCASE:" => sub { my ($right) = @_; return '"'. lc(unstr($right)) .'"' },
     ":STR:"  => sub { my ($right) = @_; return sprintf "\"%08x\"", (0+$right); },
     ":CHR:"  => sub { my ($right) = @_; return sprintf "\"%c\"", (0+$right); },
+    # Workspace
+    ":INDEX:" => sub { my ($right) = @_; our (%mapping, $mapping_base); my $mapped = $mapping{$right};
+                       return $mapping_base if ($right eq '@' || $right eq '{VAR}');
+                       if (!defined $mapped)
+                       {
+                            exit_error($ERR_SYNTAX,
+                                       "Mapping label '$right' is not known in :INDEX:");
+                       }
+                       return $mapped->[0]; },
+    ":BASE:" => sub { my ($right) = @_; our (%mapping, $mapping_register); my $mapped = $mapping{$right};
+                      return $mapping_register if ($right eq '@' || $right eq '{VAR}');
+                      if (!defined $mapped)
+                      {
+                          exit_error($ERR_SYNTAX,
+                                     "Mapping label '$right' is not known in :BASE:");
+                      }
+                      return $mapped->[1]; },
 );
 our $operators_monadic_re = "(?:" . (join '|', map { "\Q$_\E" } keys %operators_monadic) . ")";
 
@@ -767,7 +782,7 @@ our $miscquoted_op_re = "(?:" . (join "|", keys %miscquoted_op) . ")";
 # Variable definitions
 our $mapping_base       = 0;
 my $mapping_register    = undef;
-my %mapping             = ();
+our %mapping             = ();
 my %constant            = ();
 
 # Macros
@@ -2796,12 +2811,20 @@ sub expression
             $value = $var ? 1 : 0;
         }
         # Mappings and constants
-        elsif ($expr =~ s/^([A-Za-z_][A-Za-z0-9_]*)//)
+        elsif ($expr =~ s/^([A-Za-z_][A-Za-z0-9_]*|@)//)
         {
             my $name = $1;
             if (defined $mapping{$name})
             {
-                $value = $mapping{$name}->[0];  # We use the value of the mapping (ignore register and size)
+                if ($monadic && ($monadicstr eq ':INDEX:' || $monadicstr ne ':BASE:'))
+                {
+                    $value = $name;
+                    #print "Mapping with INDEX or BASE: '$name' => [@{$mapping{$name}}]\n";
+                }
+                else
+                {
+                    $value = $mapping{$name}->[0];  # We use the value of the mapping (ignore register and size)
+                }
             }
             elsif (defined $constant{$name})
             {
@@ -2939,10 +2962,12 @@ sub evaluate
         $expr =~ s/:LOWERCASE:\s*"([^"]*)"/'"' . lc($1) . '"'/ge;
         $expr =~ s/:STR:\s*(\d+)/sprintf "\"%08x\"", $1/ge;
         $expr =~ s/:CHR:\s*(\d+)/sprintf "\"%c\"", $1/ge;
+        $expr =~ s/:INDEX:\s*(\{VAR}|@)/$mapping_base/ge;
+        $expr =~ s/:BASE:\s*(\{VAR}|@)/$mapping_register/ge;
         # FIXME: We don't support:
         #   ?symbol
-        #   :BASE:
-        #   :INDEX:
+        #   :BASE: (except for @)
+        #   :INDEX: (except for @)
         #   :DEF:
         #   :LNOT:
         #   :RCONST:

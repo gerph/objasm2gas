@@ -7,6 +7,7 @@
 Constant_0                          # 1
 Constant_1                          # 4
 Constant_5                          # 1
+Size_6                              * :INDEX: @
 
         AREA |Example$$code|, CODE, READONLY
 
@@ -20,5 +21,7 @@ label   LDRB    r0, Constant_5
 
         ADR     r0, Constant_1
         LDR     r0, =Constant_1
+
+        MOV     r0, #:INDEX: Constant_5
 
         END

@@ -6,6 +6,7 @@
 .set Constant_0, 0
 .set Constant_1, 1
 .set Constant_5, 5
+.set Size_6, 6
 
         .section .text.Example, "ax"
 
@@ -20,5 +21,7 @@ label:
 
         ADD     r0, r7, #1
         LDR     r0, =Constant_1
+
+        MOV     r0, #5
 
 

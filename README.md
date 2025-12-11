@@ -36,9 +36,9 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 | `-i <paths>`            | Comma separated list of paths to search for inclues     |
 | `--32`                  | Select 32 bit mode                                      |
 | `--64`                  | Select 64 bit mode                                      |
-| `--util`                | Create a Utility file, using 'riscos64-link' |
-| `--aif`                 | Create a AIF Absolute file, using 'riscos64-link' |
-| `--rmf`                 | Create a Relocatable Module file, using 'riscos64-link' |
+| `--util`                | Create a Utility file, using `riscos64-link` |
+| `--aif`                 | Create a AIF Absolute file, using `riscos64-link` |
+| `--rmf`                 | Create a Relocatable Module file, using `riscos64-link` |
 | `--debug=<opts>`        | Selective enabling of debug options |
 
 
