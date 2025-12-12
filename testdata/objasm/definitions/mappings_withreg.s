@@ -22,6 +22,10 @@ label   LDRB    r0, Constant_5
         ADR     r0, Constant_1
         LDR     r0, =Constant_1
 
+        LDR     r0, Constant_5 - 2
+        LDR     r0, Constant_5 - 2   ; with comment
+        ADR     r0, Constant_5 - 2
+
         MOV     r0, #:INDEX: Constant_5
 
         END

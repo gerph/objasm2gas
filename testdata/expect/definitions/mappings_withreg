@@ -22,6 +22,10 @@ label:
         ADD     r0, r7, #1
         LDR     r0, =Constant_1
 
+        LDR     r0, [r7, #3]
+        LDR     r0, [r7, #3]   // with comment
+        ADD     r0, r7, #5 - 2
+
         MOV     r0, #5
 
 

@@ -782,7 +782,7 @@ our $miscquoted_op_re = "(?:" . (join "|", keys %miscquoted_op) . ")";
 # Variable definitions
 our $mapping_base       = 0;
 my $mapping_register    = undef;
-our %mapping             = ();
+our %mapping            = ();
 my %constant            = ();
 
 # Macros
@@ -2360,9 +2360,9 @@ sub single_line_conv {
     #print "Expand literals gave: $line\n";
 
     # ------ Conversion: references to field mappings ------
-    if ($line =~ m/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/)
+    if ($line =~ m/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)(.*)/)
     {
-        my ($space1, $instbase, $extra, $space2, $reg1, $comma, $symbol) = ($1, $2, $3, $4, $5, $6, $7);
+        my ($space1, $instbase, $extra, $space2, $reg1, $comma, $symbol, $remainder) = ($1, $2, $3, $4, $5, $6, $7, $8);
         if (defined $mapping{$symbol})
         {
             my ($value, $reg) = @{ $mapping{$symbol} };
@@ -2376,12 +2376,27 @@ sub single_line_conv {
             {
                 $replacement = "$reg, #$value";
                 $instbase = 'ADD';
+                if ($extra eq 'L' && $value < 4096)
+                {
+                    $extra = ' ';
+                }
             }
             else
             {
+
+                my ($newvalue, $rest);
+                my $tail = '';
+                if ($remainder =~ /^(.*?)(\s*\/\/.*)$/)
+                {
+                    $remainder = $1;
+                    $tail = $2;
+                }
+                ($newvalue, $rest) = expression("$value$remainder");
+                $value = $newvalue;
+                $remainder = $rest . $tail;
                 $replacement = "[$reg, #$value]";
             }
-            $line =~ s/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)/$space1$instbase$extra$space2$reg1$comma$replacement/;
+            $line =~ s/(\s)(ADR|LDR|STR)([A-Z]*)(\s+)($regnames_re)(\s*,\s*)(\w+)([^;]*)/$space1$instbase$extra$space2$reg1$comma$replacement$remainder/;
         }
     }
     #print "About to finish: $line\n";
