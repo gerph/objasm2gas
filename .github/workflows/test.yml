@@ -33,7 +33,7 @@ jobs:
       leafname: ${{ steps.version.outputs.leafname }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Make an archive
         run: |
