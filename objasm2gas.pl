@@ -260,11 +260,9 @@ our %operators_binary = (
     ":CC:"   => sub { my ($left, $right) = @_; return '"'. unstr($left) . unstr($right) .'"' },
     # FIXME: We don't support:
     #   ?symbol
-    #   :LNOT:
     #   :RCONST:
     #   :CC_ENCODING:
     #   :REVERSE_CC:
-    #   :MOD:
     #   :ROR:
     #   :ROL:
     # See: https://developer.arm.com/documentation/dui0801/g/Symbols--Literals--Expressions--and-Operators/Unary-operators?lang=en
@@ -389,6 +387,8 @@ our %operators_monadic = (
     # Binary
     "~"      => sub { my ($right) = @_; our $datawidth; return ($right) ^ $datawidth },
     ":NOT:"  => sub { my ($right) = @_; our $datawidth; return ($right) ^ $datawidth },
+    # Logical
+    ":LNOT:" => sub { my ($right) = @_; return bool($right) ? 0 : 1; },
     # String
     ":LEN:"  => sub { my ($right) = @_; return length(unstr($right)) },
     ":UPPERCASE:" => sub { my ($right) = @_; return '"'. uc(unstr($right)) .'"' },
