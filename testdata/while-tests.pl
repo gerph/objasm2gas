@@ -8,7 +8,9 @@ use FindBin;
 use Text::ParseWords qw(shellwords);
 
 my $tool = "$FindBin::Bin/../objasm2gas.pl";
-my $directory = tempdir(CLEANUP => 1);
+# Dockcross mounts the current directory, not the host's /tmp. Relative paths
+# keep these fixtures accessible to both native and containerised assemblers.
+my $directory = tempdir('while-tests-XXXXXX', DIR => '.', CLEANUP => 1);
 my $sequence = 0;
 
 sub convert
