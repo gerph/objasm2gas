@@ -278,3 +278,8 @@ Args: aarch64/hello_world
 
 Include: tests-errors.txt
 Include: tests-realworld.txt
+
+Group: WHILE replay
+Command: perl while-tests.pl
+
+Test: Conditional replay and failure boundaries

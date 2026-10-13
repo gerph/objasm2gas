@@ -37,5 +37,9 @@ ${CROSS64}:
 tests: ${CROSS32} ${CROSS64} testdata/test.pl dirs
 	AS="${AS}" AS64="${AS64}" perl testdata/test.pl -no-riscos-names -junitxml artifacts/junit.xml -script "${TESTSCRIPT}" -show-command -show-output "../test-conversion.sh" testdata
 
+.PHONY: tests-while
+tests-while:
+	AS="${AS}" AS64="${AS64}" perl testdata/while-tests.pl
+
 dirs:
 	mkdir -p artifacts

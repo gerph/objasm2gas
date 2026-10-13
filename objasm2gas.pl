@@ -13,7 +13,7 @@ no warnings qw(portable);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 my $toolname = 'objasm2gas';
-my $ver = '1.8';
+my $ver = '1.9';
 my $helpmsg = <<"USAGE";
 $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
@@ -40,6 +40,7 @@ Options:
         --rmf                   Create a Relocatable Module file, using 'riscos64-link'
         --predefine=<statement> Pre-execute a SETA, SETL or SETS directive.
         --line-map=<file>       Specify a mapping file for output lines to source lines
+        --while-limit=<count>   Maximum iterations per WHILE loop [default: 100000]
     -i <paths>                  Comma separated list of paths to include
     --32                        Select 32bit mode
     --64                        Select 64bit mode
@@ -428,8 +429,6 @@ our %misc_op = (
     "INCBIN"    =>  ".incbin",
     "INCLUDE"   =>  ".include",  # Only processed when no --inline given
     "END"       =>  ".end",
-    "WHILE"     =>  ".rept",
-    "WEND"      =>  ".endr",
     "IMPORT"    =>  ".global",  # check before (weak attr)
     "EXTERN"    =>  ".global",
     "GLOBAL"    =>  ".global",
@@ -652,11 +651,14 @@ our @include_paths  = ('.');
 #   context => the context it was created in
 #   type => the variable type (A, L, S)
 our @variable_stack = ({}, {});
+our @while_stack;
+our $while_limit = 100000;
 
 # Default config
 set_config(32);
 
 GetOptions(
+    "while-limit=i" => \$while_limit,
     "o|output=s"    => \@output_files,
     "x|suffix=s"    => \$output_suffix,
     "h|help"        => sub { print $helpmsg; exit },
@@ -797,6 +799,10 @@ our %linemapping;
 
 # Conditional stack.
 my @cond_stack = (1,);
+if ($while_limit < 1)
+{
+    exit_error($ERR_ARGV, "$toolname: --while-limit must be a positive integer");
+}
 
 
 END {
@@ -985,6 +991,7 @@ sub process_file {
     }
 
     my $end_used;
+    my $while_base = scalar(@while_stack);
 
     $end_used = 0;
     $in_file = $filename;
@@ -1014,6 +1021,10 @@ sub process_file {
             }
             $linenum_output += scalar(@nlines);
         }
+    }
+    if (scalar(@while_stack) != $while_base)
+    {
+        exit_error($ERR_SYNTAX, $while_stack[-1]->{'context'} . ": WHILE missing WEND at end of file");
     }
     print $f_out "\n";  # required by as
     $linenum_output += 1;
@@ -1359,6 +1370,7 @@ sub expand_macro {
         }
     }
 
+    my $while_base = scalar(@while_stack);
     $in_file = $macrodef->{'base_file'};
     $linenum_input = $macrodef->{'base_line'};
     for my $line (@{ $macrodef->{'lines'} })
@@ -1412,6 +1424,11 @@ sub expand_macro {
         }
     }
 
+    if (scalar(@while_stack) != $while_base)
+    {
+        exit_error($ERR_SYNTAX, $while_stack[-1]->{'context'} . ": WHILE missing WEND at end of macro");
+    }
+
     # Leaving the macro
     # ... so pop the label stack
     my $macro_labels = pop @label_stack;
@@ -1430,6 +1447,66 @@ sub expand_macro {
 }
 
 
+sub expand_while {
+    my ($frame) = @_;
+    our ($in_file, $linenum_input, $context, $out_file, $linenum_output, $f_out);
+    my @caller_context = ($in_file, $linenum_input, $context);
+    my $conditional_state = join(',', @cond_stack);
+    my $iteration = 0;
+
+    # Replay through the ordinary converter without creating a variable scope.
+    # Conditions and substitutions must observe SETA/SETL/SETS from the last pass.
+    while (1)
+    {
+        $context = $frame->{'context'};
+        my $condition = $frame->{'condition'};
+        $condition =~ s/\$([A-Za-z_][A-Za-z0-9_]*)\.?/
+            my $name = $1;
+            my $var = find_variable($name);
+            defined($var) ? unstr($var->{'value'}) : '$' . $name/ge;
+        my ($value, $tail) = expression($condition);
+        if ($tail !~ /^\s*(?:(?:;|\/\/).*)?$/ || $value !~ /^-?\d+$/)
+        {
+            exit_error($ERR_SYNTAX, "$context: WHILE condition cannot be evaluated: $condition");
+        }
+        last if ($value eq '0');
+        if (++$iteration > $while_limit)
+        {
+            exit_error($ERR_SYNTAX, "$context: WHILE iteration limit $while_limit exceeded");
+        }
+        for my $record (@{ $frame->{'lines'} })
+        {
+            my ($line, $file, $number, $linecontext) = @$record;
+            ($in_file, $linenum_input) = ($file, $number + 1);
+            $linecontext =~ s/ -> [^ ]+$//;
+            $linecontext .= " [WHILE iteration $iteration]";
+            $context = "$linecontext -> $out_file:$linenum_output";
+            my $outputline = single_line_conv($line);
+            if (defined $outputline)
+            {
+                print $f_out "$outputline\n";
+                my @lines = split /\n/, $outputline, -1;
+                @lines = ('') if ($outputline eq '');
+                for my $i (0..scalar(@lines)-1)
+                {
+                    $linemapping{$linenum_output + $i} = $linecontext;
+                }
+                $linenum_output += scalar(@lines);
+            }
+        }
+        if (@while_stack)
+        {
+            exit_error($ERR_SYNTAX, "$context: WHILE body contains an unclosed loop");
+        }
+        if (join(',', @cond_stack) ne $conditional_state)
+        {
+            exit_error($ERR_SYNTAX, "$context: WHILE body has unbalanced conditionals");
+        }
+    }
+    ($in_file, $linenum_input, $context) = @caller_context;
+}
+
+
 sub single_line_conv {
     our $in_file;
     our $out_file;
@@ -1439,6 +1516,35 @@ sub single_line_conv {
     our $macroname;
     our %macros;
     my $line = shift;
+    my $original_line = $line;
+
+    # Cache raw lines before variable substitution, comment conversion or macro
+    # interpretation. Nested WHILE/WEND pairs belong to the cached body.
+    if (@while_stack)
+    {
+        my $frame = $while_stack[-1];
+        if ($line =~ /^(?:\S+)?\s+(WHILE|WEND)(?:\s|$)/)
+        {
+            my $directive = $1;
+            if ($directive eq 'WEND' && $line !~ /^\s+WEND\s*(?:(?:;|\/\/).*)?$/)
+            {
+                exit_error($ERR_SYNTAX, "$context: WEND does not take a label or arguments");
+            }
+            $frame->{'depth'} += ($directive eq 'WHILE') ? 1 : -1;
+            if ($frame->{'depth'} > 64)
+            {
+                exit_error($ERR_SYNTAX, "$context: WHILE nesting limit 64 exceeded");
+            }
+            if ($frame->{'depth'} == 0)
+            {
+                pop @while_stack;
+                expand_while($frame) if ($frame->{'active'});
+                return undef;
+            }
+        }
+        push @{ $frame->{'lines'} }, [$line, $in_file, $linenum_input - 1, $context];
+        return undef;
+    }
 
     # empty line
     if ($line =~ m/^\s*$/) {
@@ -1610,6 +1716,31 @@ sub single_line_conv {
         return undef;
     }
     #print "LINE: label='$label', cmd='$cmd', values='$values', comment='$comment'\n";
+
+    # WHILE uses interpreted conditions, not GAS's fixed-count .rept directive.
+    if ($cmd eq 'WHILE')
+    {
+        if ($opt_simplecond)
+        {
+            exit_error($ERR_UNSUPPORT, "$context: WHILE requires interpreted conditions; remove --simple-conditions");
+        }
+        if ($label ne '')
+        {
+            exit_error($ERR_SYNTAX, "$context: WHILE cannot have a label");
+        }
+        $original_line =~ s/^\s+WHILE\s*//;
+        if ($original_line !~ /\S/)
+        {
+            exit_error($ERR_SYNTAX, "$context: WHILE requires a condition");
+        }
+        push @while_stack, {'depth' => 1, 'condition' => $original_line,
+                           'context' => $context, 'active' => $cond_stack[-1], 'lines' => []};
+        return undef;
+    }
+    if ($cmd eq 'WEND')
+    {
+        exit_error($ERR_SYNTAX, "$context: WEND outside WHILE");
+    }
 
     # ------ Conversion: conditional directives ------
     if ($cmd eq 'IF' || $cmd eq '[')

@@ -2,7 +2,7 @@
 
 <div align="center">
 <p>
-      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.5-brightgreen"></a>
+      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.9-brightgreen"></a>
       <a href="https://github.com/gerph/objasm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
 </p>
 </div>
@@ -33,6 +33,7 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 | `--bin`                 | When used with `--gas`, create a binary file (default is to produce an ELF file) |
 | `--predefine=<asm>`     | Pre-execute a SETA, SETL or SETS directive.             |
 | `--line-map=<file>`     | Output a map of output file line numbers to source lines. |
+| `--while-limit=<count>` | Maximum iterations per WHILE loop (default 100000). |
 | `-i <paths>`            | Comma separated list of paths to search for inclues     |
 | `--32`                  | Select 32 bit mode                                      |
 | `--64`                  | Select 64 bit mode                                      |
@@ -66,7 +67,49 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 - [X] Macro expansion
 - [X] Local variables within macros
 - [X] Conditionals with expressions
-- [ ] `WHILE` loops
+- [X] `WHILE` loops with re-evaluated conditions
+
+### WHILE and WEND
+
+`WHILE` tests its expression before each iteration. The converter caches the
+body and replays it through the normal expression, directive and macro handlers.
+`SETA`, `SETL` and `SETS` changes affect the next test; a false initial condition
+emits nothing. Loops nest and work within macros, retaining their existing local
+variable scope. Inline includes can change loop state; use `--inline` when the
+included source contains ObjAsm directives to interpret during replay.
+
+```asm
+        GBLA count
+count   SETA 0
+        WHILE count < 3
+        DCD count
+count   SETA count + 1
+        WEND
+```
+
+This emits three words, 0, 1 and 2. It is not GAS `.rept`, which repeats a fixed
+count without re-evaluating an ObjAsm condition. WHILE requires the default
+interpreted conditional mode; `--simple-conditions` reports an unsupported-mode
+error rather than generating misleading output.
+
+Missing WEND, stray WEND, unbalanced body conditionals and an exceeded iteration
+limit are processing errors. A loop has no new variable scope; repeated ordinary
+labels must therefore be made unique, or use numeric local labels. Replayed output
+retains original source locations and iteration information in `--line-map`.
+The default iteration limit is 100000 per loop; raise it explicitly with
+`--while-limit` for a larger finite expansion. Nested cached loops are limited to
+64 levels. These bounds detect accidental nontermination; they are not ObjAsm
+instruction-set limits.
+
+The loop regression suite runs as part of `make tests`. It can also run using
+installed native cross-assemblers without fetching Docker wrappers:
+
+```sh
+make tests-while AS=arm-unknown-riscos-as AS64=aarch64-unknown-linux-gnu-as
+```
+
+Substitute the assembler commands available on your host. The converter and these
+tests run on host Perl 5.14 or later, not the RISC OS Perl 5.001 interpreter.
 
 ## Extensions
 
