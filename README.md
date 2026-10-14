@@ -2,7 +2,7 @@
 
 <div align="center">
 <p>
-      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.9-brightgreen"></a>
+      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.10-brightgreen"></a>
       <a href="https://github.com/gerph/objasm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
 </p>
 </div>
@@ -43,6 +43,24 @@ Migrate legacy ObjASM syntax assembly (as used on RISC OS) to GNU syntax (GAS).
 | `--debug=<opts>`        | Selective enabling of debug options |
 
 
+
+### ENTRY in AArch64 output
+
+With `--64`, `ENTRY` defines `_entry` at the current position and exports it,
+equivalent to an `_entry` label followed by `EXPORT _entry`. The GNU output is:
+
+```asm
+        .global _entry
+_entry:
+```
+
+It emits no bytes. A label on the same source line remains an alias for that
+position. Place `ENTRY` once, in the executable code area where execution should
+begin; do not also define `_entry` elsewhere. Conditional assembly still controls
+whether it is emitted. The linker must select `_entry` as its entry symbol:
+exporting a symbol alone does not set an ELF header's entry address.
+
+In `--32` mode, `ENTRY` retains its previous ignored behaviour.
 
 ## Supported conversions
 

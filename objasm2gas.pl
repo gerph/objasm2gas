@@ -13,7 +13,7 @@ no warnings qw(portable);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 my $toolname = 'objasm2gas';
-my $ver = '1.9';
+my $ver = '1.10';
 my $helpmsg = <<"USAGE";
 $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
@@ -1880,6 +1880,16 @@ sub single_line_conv {
                 return undef;
             }
         }
+    }
+
+    # ENTRY marks an exported ELF entry symbol only for AArch64 output.
+    # Reconstruct normally so a label and comment on this line are retained.
+    if ($cmd eq 'ENTRY' && $builtins{'CONFIG'} == 64)
+    {
+        $cmd = '.global';
+        $values = "_entry\n_entry:";
+        $cspcs = ' ';
+        goto reconstruct;
     }
 
     # ------ Conversion: Macro expansion ------

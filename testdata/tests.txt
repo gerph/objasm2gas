@@ -283,3 +283,8 @@ Group: WHILE replay
 Command: perl while-tests.pl
 
 Test: Conditional replay and failure boundaries
+
+Group: ENTRY mapping
+Command: perl entry-tests.pl
+
+Test: AArch64 exported entry position and AArch32 compatibility
