@@ -1,0 +1,9 @@
+objasm2gas may return one of several error code if it encounters problems.
+
+    0       No problems occurred.
+    1       Invalid or conflicting command-line args.
+    2       File I/O error.
+    3       Unsupported conversion.
+    4       Syntax or processing error.
+    255     Generic error code.
+
