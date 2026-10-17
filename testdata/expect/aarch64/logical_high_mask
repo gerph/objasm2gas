@@ -1,0 +1,11 @@
+// Logical immediates with bit 63 set must keep their high bits
+        .section    .text.Mask, "ax"
+        .global  high_bit
+high_bit:
+        MOVN    X3, #0
+        ANDS    X0, X3, #0x8000000000000000
+        ANDS    X0, X3, #0xffff000000000000
+        ANDS    X0, X3, #-16
+        ANDS    X0, X3, #0x7fffffffffffffff
+        RET
+

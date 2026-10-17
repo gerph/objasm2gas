@@ -1,0 +1,7 @@
+// NOINIT areas are reserved space, not stored in the object
+        .section    .bss.Matrix_$Zero, "aw", %nobits
+        .balign 16
+        .global  matrix_zero
+matrix_zero:
+        .space   32
+
