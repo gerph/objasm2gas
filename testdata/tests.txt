@@ -24,6 +24,16 @@
 #    $SFILE     - Source assembler filename (in format supplied)
 #
 
+Group: Command line
+Expect: expect/cli-return-code
+
+Test: Return codes (short option)
+Command: $TOOL -r
+
+Test: Return codes (long option)
+Command: $TOOL --return-code
+
+
 Group: Sections
 Command: $TOOL objasm/$ARG1.s -o gas/$ARG1.s $ARG2
 Creates: gas/$ARG1.s

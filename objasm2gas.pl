@@ -662,7 +662,7 @@ GetOptions(
     "o|output=s"    => \@output_files,
     "x|suffix=s"    => \$output_suffix,
     "h|help"        => sub { print $helpmsg; exit },
-    "return-code"   => sub { print $rvalmsg; exit },
+    "r|return-code" => sub { print $rvalmsg; exit },
     "V|version"     => sub { print "$ver\n"; exit },
     "compatible"    => \$opt_compatible,
     "v|verbose"     => \$opt_verbose,
