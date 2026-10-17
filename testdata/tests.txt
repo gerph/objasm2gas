@@ -32,6 +32,14 @@ Text:Matches: expect/$ARG1
 Test: Section declarations
 Args: sections/code_and_data
 
+Test: NOINIT area
+Args: sections/noinit
+
+Test: NOINIT area (AArch64)
+Command: $TOOL objasm/sections/noinit.s -o gas/sections/noinit_aarch64.s --64
+Creates: gas/sections/noinit_aarch64.s
+Text:Matches: expect/sections/noinit_aarch64
+
 Test: Unrecognised flag
 Args: sections/unrecognised --strict
 -Creates:
@@ -84,6 +92,10 @@ Args: data/floats
 
 Test: Example data for AArch64
 Args: data/aarch64_helloworld
+
+Test: Logical immediates with bit 63 set
+Command: $TOOL --64 objasm/$ARG1.s -o gas/$ARG1.s
+Args: aarch64/logical_high_mask
 
 
 Group: Register naming

@@ -13,7 +13,7 @@ no warnings qw(portable);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 my $toolname = 'objasm2gas';
-my $ver = '1.10';
+my $ver = '1.11';
 my $helpmsg = <<"USAGE";
 $toolname (v$ver) - Convert legacy ARM assembly syntax (used by objasm) to GNU syntax (GAS)
 
@@ -2350,6 +2350,7 @@ sub single_line_conv {
         my @warnings = ();
         my $align = undef;
         my $marked_readonly = 0;
+        my $noinit = 0;
         for (@options) {
             s/^ *//;
             s/ *$//;
@@ -2368,6 +2369,9 @@ sub single_line_conv {
                 $align = $1;
             }
 
+            # NOINIT areas are reserved space only (zero-initialised, no file contents)
+            $noinit = 1 if (s/NOINIT//i);
+
             # Sections are readonly by default in ELF
             $marked_readonly = 1 if (s/READONLY//i);
 
@@ -2381,6 +2385,13 @@ sub single_line_conv {
             # It's data, and they didn't mark as readonly, and didn't say READWRITE
             # So it must be readwrite (ObjAsm defaults to read-write if you don't say)
             $flags .= 'w';
+        }
+        if ($noinit)
+        {
+            # Writeable, but occupies no space in the object: NOBITS
+            $args =~ s/\%progbits/\%nobits/;
+            $args = ", \%nobits" if ($args eq '');
+            $flags .= 'w' if ($flags !~ /w/);
         }
         if (scalar(@warnings) > 0)
         {
@@ -2403,7 +2414,11 @@ sub single_line_conv {
             $sec_name =~ s/\$\$?(code|data)//i;
             $sec_name =~ s/\$/_/;
             my $sec = '.text';
-            if ($args =~ /\%progbits/)
+            if ($noinit)
+            {
+                $sec = '.bss';
+            }
+            elsif ($args =~ /\%progbits/)
             {
                 if ($flags =~ /w/)
                 {
@@ -3240,7 +3255,24 @@ sub gas_number
     }
     else
     {
-        if ($value & $datatbs)
+        if ($value & (1<<63))
+        {
+            # Bit 63 set: the 48-bit sign extension below would discard the
+            # high bits (turning &8000000000000000 into 0x0001000000000000).
+            # Small negatives keep their short form; anything else is
+            # emitted as a full 64-bit pattern, which GAS reads unchanged.
+            my $magnitude = (~$value + 1) & 0xFFFFFFFFFFFFFFFF;
+            if ($magnitude != 0 && $magnitude < 0x1000000000000)
+            {
+                $sign = '-';
+                $value = $magnitude;
+            }
+            else
+            {
+                return sprintf("0x%016x", $value);
+            }
+        }
+        elsif ($value & $datatbs)
         {
             #$value = ($value & $datawidth) - $datalimit;
             # 64bit calculations in perl don't really work, so this should
