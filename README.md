@@ -2,7 +2,7 @@
 
 <div align="center">
 <p>
-      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.10-brightgreen"></a>
+      <a href="https://github.com/gerph/objasm2gas"><img src="https://img.shields.io/badge/objasm2gas-v1.11-brightgreen"></a>
       <a href="https://github.com/gerph/objasm2gas/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3.0-blue" alt="LICENSE"></a>
 </p>
 </div>
@@ -61,6 +61,18 @@ whether it is emitted. The linker must select `_entry` as its entry symbol:
 exporting a symbol alone does not set an ELF header's entry address.
 
 In `--32` mode, `ENTRY` retains its previous ignored behaviour.
+
+### AREA NOINIT
+
+An `AREA` with the `NOINIT` attribute is reserved space with no stored contents.
+It is converted to a writeable, aligned `NOBITS` section in `.bss`:
+
+```asm
+        .section    .bss.Name, "aw", %nobits
+```
+
+Other `DATA` areas remain `PROGBITS`. Whether the zeroed space is allocated at load
+time depends on the linker script and image format in use.
 
 ## Supported conversions
 
